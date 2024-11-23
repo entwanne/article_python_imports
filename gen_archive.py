@@ -11,11 +11,11 @@ archive_name = sys.argv[1]
 sections = sys.argv[2:]
 
 manifest = {
-    'slug': 'un-zeste-de-python',
-    'title': 'Un zeste de Python',
+    'slug': 'la-mecanique-des-imports-en-python',
+    'title': 'La mécanique des imports en Python',
     'version': 2.1,
-    'description': 'Débuter avec Python',
-    'type': 'TUTORIAL',
+    'description': 'Comprendre son comportement et le modifier',
+    'type': 'ARTICLE',
     'licence': 'CC BY-SA',
     'ready_to_publish': True,
 }
