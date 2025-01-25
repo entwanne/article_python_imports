@@ -57,7 +57,7 @@ Coucou
 <module 'my_module' from 'my_module.py'>
 ```
 
-Mais les cas où le besoin de réimporter un module sont assez rares en réalité.
+Mais les cas où l'on a besoin de réimporter un module sont assez rares en réalité.
 
 ## Altérer le cache
 
@@ -82,4 +82,5 @@ On utilisera ici le type `ModuleType` (du module `types`) pour définir un objet
 3
 ```
 
-Mais nous verrons par la suite comment nous pouvons interagir directement avec le mécanisme d'import pour arriver à ce comportement.
+[[i]]
+| Plutôt que de truquer le cache, nous verrons par la suite comment nous pouvons interagir directement avec le mécanisme d'import pour arriver à ce comportement.
