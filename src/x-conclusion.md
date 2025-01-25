@@ -16,3 +16,5 @@
         - <https://peps.python.org/pep-0451/>
         - <https://docs.python.org/3/reference/import.html>
         - <https://docs.python.org/3/library/importlib.html>
+
+Pour compléter, je peux aussi vous renvoyer vers [ce billet](https://zestedesavoir.com/billets/1842/notes-sur-les-modules-et-packages-en-python/) qui reprend différents point du mécanisme des imports.

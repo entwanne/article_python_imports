@@ -14,7 +14,7 @@ manifest = {
     'slug': 'la-mecanique-des-imports-en-python',
     'title': 'La mécanique des imports en Python',
     'version': 2.1,
-    'description': 'Comprendre son comportement et le modifier',
+    'description': 'Comprendre son comportement et le personnaliser',
     'type': 'ARTICLE',
     'licence': 'CC BY-SA',
     'ready_to_publish': True,

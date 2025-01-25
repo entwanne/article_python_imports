@@ -1,8 +1,15 @@
 # Système de cache des modules
 
-Ces étapes de l'import, si elles étaient répétées à chaque fois, représenteraient à force un coût non négligeable.
+Jusqu'ici, on peut résumer ainsi les différentes étapes réalisées par Python lors de l'import d'un module :
+
+1. Résolution du nom (afin de gérer les imports relatifs)
+2. Imports récursifs des paquets parents (ce procédé étant répété pour chaque parent)
+3. Chargement du module
+4. Exécution du code du module
+
+Mais ces étapes, si elles étaient répétées à chaque import, représenteraient à force un coût non négligeable.
 Pour l'éviter, Python met en place un mécanisme de cache afin de se souvenir des modules précédemment importés.  
-Ainsi, l'import d'un module déjà importé court-circuite les étapes vues précédemment, et c'est assez facile à constater.
+Ainsi, l'import d'un module déjà importé intervient au tout début et court-circuite ces étapes, ce qui est assez facile à constater.
 
 ```pycon
 >>> import my_module
@@ -10,6 +17,8 @@ Ainsi, l'import d'un module déjà importé court-circuite les étapes vues pré
 
 On voit que cette fois-ci importer `my_module` ne provoque pas d'effet de bord (la première fois il était affiché « Coucou »), c'est que le code du module n'a pas été réexécuté.  
 Ce cache est partagé par les différents mécanismes d'import de Python, telle que la fonction `import_module`.
+
+## Manipuler le cache
 
 On peut accéder à ce cache via l'attribut `modules` du module `sys`.
 
@@ -33,7 +42,7 @@ Et permet de facilement vérifier, en y recherchant le nom d'un module, si celui
 True
 ```
 
-----------
+## Recharger un module
 
 Ce mécanisme de court-circuit a cependant un défaut : si le code du module cible est amené à changer au cours du temps (pendant que le programme tourne) et qu'il a déjà été importé, il ne permet pas d'en obtenir la dernière version.
 
@@ -50,7 +59,7 @@ Coucou
 
 Mais les cas où le besoin de réimporter un module sont assez rares en réalité.
 
-----------
+## Altérer le cache
 
 Enfin ce cache nous permet aussi de falsifier le mécanisme d'import, en attribuant dynamiquement un objet-module à une clé du cache.  
 On utilisera ici le type `ModuleType` (du module `types`) pour définir un objet qui soit un vrai module, mais n'importe quel type d'objet pourrait être stocké dans le cache.
