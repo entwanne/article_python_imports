@@ -156,7 +156,7 @@ DIR: Hello eval
 
 ## Étapes de l'import
 
-Concernant `path_hooks`, on en était resté à comment Python les utilisait pour créer une liste de _finders_.  
+Concernant les _path hooks_, on en était resté à comment Python les utilisait pour créer une liste de _finders_.  
 On peut maintenant aller plus loin et mieux comprendre les étapes de l'import.
 
 - On construit les _finders_ à l'aide des listes `sys.path` et `sys.path_hooks` (la liste `path_finders` que l'on a construite plus tôt dans ce chapitre).
@@ -180,72 +180,144 @@ On peut maintenant aller plus loin et mieux comprendre les étapes de l'import.
 <module 'random' from '/usr/lib/python3.12/random.py'>
 ```
 
-## `importlib.abc`
+## Ajouter notre propre _hook_
 
-----------
+Et cela nous amène à construire notre propre entrée à ajouter au `sys.path_hooks`, sur le modèle de celui dédié aux archives zip.  
+En effet, Python est capable d'importer des fichiers `.zip` mais il ne sait pas traiter les archives `.tar.gz`.
 
-4. Path hooks
-    - Python propose des utilitaires pour gérer différents types de _finders_ et _loaders_
-        - `PathEntryFinder` est un _finder_ dédié pour les entrées de `sys.path`
-        - `SourceLoader` est un _loader_ offrant de facilités pour importer un fichier source
-            - Un _source loader_ a juste à implémenter des méthodes `get_filename` et `get_data` (qui renvoie le contenu du module sous forme de _bytes_)
-    - On peut par exemple ajouter un _loader_ pour gérer les archives `.tar.gz`
-        - fonctionnant sur le même principe que l'import d'archives `.zip`
-        - Le _finder_ est un `PathEntryFinder` classique
-        - Le _loader_ s'occupe d'ouvrir l'archive, de localiser le module et d'en renvoyer la source
-        - Il suffit ensuite de le brancher aux `sys.path_hooks`
-        - Python garde en cache les _hooks_ existants et il faut donc penser à nettoyer le cache
-    - On peut imaginer d'autres exemples de _path hooks_
-        - Import depuis tout type d'archive, ou tout ce qui prend la forme d'une collection de fichiers
-        - Import depuis le réseau (on y reviendra plus tard)
+On va d'abord créer une telle archive contenant un fichier `tar_example.py`
 
 ```python
-import importlib
-import importlib.abc
-import importlib.util
-import sys
-import tarfile
-
-
-class ArchiveFinder(importlib.abc.PathEntryFinder):
-    def __init__(self, path):
-        self.loader = ArchiveLoader(path)
-
-    def find_spec(self, fullname, path):
-        if fullname in self.loader.filenames:
-            return importlib.util.spec_from_loader(fullname, self.loader)
-
-
-class ArchiveLoader(importlib.abc.SourceLoader):
-    def __init__(self, path):
-        self.archive = tarfile.open(path, mode='r:gz')
-        self.filenames = {
-            name.removesuffix('.py'): name
-            for name in self.archive.getnames()
-            if name.endswith('.py')
-        }
-
-    def get_data(self, name):
-        member = self.archive.getmember(name)
-        fobj = self.archive.extractfile(member)
-        return fobj.read().decode()
-
-    def get_filename(self, name):
-        return self.filenames[name]
-
-
-def archive_path_hook(archive_path):
-    if archive_path.endswith('.tar.gz'):
-        return ArchiveFinder(archive_path)
-    raise ImportError
-
-
-sys.path_hooks.append(archive_path_hook)
-sys.path.append('packages.tar.gz')
-sys.path_importer_cache.clear()
-
-
-import tar_example
-tar_example.hello('PyConFR')
+def hello(name):
+    print('TAR:', 'Hello', name)
 ```
-Code: `targz_finder.py`
+Code: `packages.tar.gz/tar_example.py`
+
+[[i]]
+| Pour créer l'archive vous pouvez utiliser la commande `tar czf packages.tar.gz --remove-files tar_example.py` après avoir créé un fichier `tar_example.py` dans le répertoire courant contenant le code ci-dessus.
+
+Si on ajoute `'packages.tar.gz'` au `sys.path` on constate bien que ça ne suffit pas à rendre notre module `tar_example` accessible : il manque toujours le _path hook_ pour gérer ce type d'archive.
+
+```pycon
+>>> sys.path.append('packages.tar.gz')
+>>> import tar_example
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ModuleNotFoundError: No module named 'tar_example'
+```
+
+Avant de construire nos _finder_ et _loader_ et de mettre en place le _hook_, on va s'intéresser au traitement de l'archive `.tar.gz`.
+
+[Le module `tarfile` de Python]() nous permet de manipuler les archives tar (et `.tar.gz` par extension).  
+La fonction `open` du module prend un chemin et nous renvoie un objet pour interagir avec l'archive.
+
+```pycon
+>>> import tarfile
+>>> archive = tarfile.open('packages.tar.gz')
+>>> archive
+<tarfile.TarFile object at 0xb1ab1ab1a>
+```
+
+On voit que l'objet possède des méthodes `getnames`, `getmember` et `extractfile` qui permettent respectivement de lister les noms de fichiers contenus dans l'archive, récupérer l'entrée de l'archive associée à un nom de fichier, extraire le contenu d'un fichier à partir de l'entrée.
+
+```pycon
+>>> archive.getnames()
+['tar_example.py']
+>>> member = archive.getmember('tar_example.py')
+>>> file = archive.extractfile(member)
+>>> file
+<ExFileObject name='packages.tar.gz'>
+>>> file.read()
+b"def hello(name):\n    print('TAR:', 'Hello', name)\n"
+```
+
+[[a]]
+| Attention, l'archive possède aussi une méthode `extract` mais celle-ci extrait directement le fichier dans le répertoire courant.
+| On préférera donc `extractfile` qui nous renvoie un objet-fichier que l'on peut utiliser directement.
+
+-----
+
+Pour nos _finder_ et _loader_, nous allons nous appuyer sur le module `importlib.abc` (la classes abstraites liées à `importlib`) qui propose deux classes qui nous intéressent ici :
+
+- `PathEntryFinder`, un type de _finder_ dédié aux entrées de `sys.path` (nous verrons par la suite qu'il existe un autre type de _finder).
+- `SourceLoader`, un _loader_ similaire au `SourceFileLoader` que nous avons étudié précédemment.
+
+Un `SourceLoader` a juste besoin d'implémenter les méthodes `get_filename` (obtenir le chemin du fichier associé au nom d'un module) et `get_data` (obtenir sous forme de _bytes_ le code source associé à un chemin de fichier), le reste des méthodes est déjà implémenté sur la classe.  
+Pour faire simple, on va considérer que le _loader_ est instancié sur une archive précise (dont le chemin sera donné en argument au constructure) et que le chemin d'un fichier est le chemin à l'intérieur de cette archive.
+
+Dans la méthode d'initialisation on s'occupe donc d'ouvrir l'archive et d'extraire les noms de fichiers présents pour créer une table d'association (dictionnaire) entre noms de modules et noms de fichiers.  
+Ainsi dans `get_filename` on peut renvoyer le nom de fichier associé au nom de module dans cette table, et dans `get_data` utiliser le code vu plus haut pour extraire le contenu d'un fichier.
+
+```pycon
+>>> import importlib.abc
+>>>
+>>> class ArchiveLoader(importlib.abc.SourceLoader):
+...     def __init__(self, path):
+...         self.archive = tarfile.open(path, mode='r:gz')
+...         self.filenames = {
+...             name.removesuffix('.py'): name
+...             for name in self.archive.getnames()
+...             if name.endswith('.py')
+...         }
+...     
+...     def get_data(self, name):
+...         member = self.archive.getmember(name)
+...         fobj = self.archive.extractfile(member)
+...         return fobj.read().decode()
+...     
+...     def get_filename(self, name):
+...         return self.filenames[name]
+...
+```
+
+Côté _finder_, notre classe recevra un chemin d'archive et créera directement l'unique _loader_ associé à cette archive.
+La méthode `find_spec` n'aura alors qu'à tester si le nom de module existe dans le _loader_ et renvoyer la spécification associée (on dispose pour cela dans `importlib.util` d'une fonction `spec_from_loader` qui prend un nom et un _loader_).
+
+```pycon
+>>> class ArchiveFinder(importlib.abc.PathEntryFinder):
+...     def __init__(self, path):
+...         self.loader = ArchiveLoader(path)
+...     
+...     def find_spec(self, fullname, path):
+...         if fullname in self.loader.filenames:
+...             return importlib.util.spec_from_loader(fullname, self.loader)
+...
+```
+
+Il ne nous reste plus qu'à créer le _hook_ — une fonction qui reçoit un chemin et renvoie le _finder_ associé, ou lève une erreur `ImportError` si elle ne sait pas le gérer — et à l'ajouter au `sys.path_hooks`.
+
+```pycon
+>>> def archive_path_hook(archive_path):
+...     if archive_path.endswith('.tar.gz'):
+...         return ArchiveFinder(archive_path)
+...     raise ImportError
+...
+>>> sys.path_hooks.append(archive_path_hook)
+```
+
+Et l'on peut maintenant importer notre module…
+
+```pycon
+>>> import tar_example
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ModuleNotFoundError: No module named 'tar_example'
+```
+
+… ou presque !  
+Python a en fait un mécanisme de cache en place au niveau des _path hooks_ pour éviter d'avoir à les recalculer à chaque import.
+Il faut donc nettoyer ce cache à l'aide de la fonction `sys.path_importer_cache.clear` pour rendre notre _hook_ disponible.
+
+```pycon
+>>> sys.path_importer_cache.clear()
+>>> import tar_example
+>>> tar_example
+<module 'tar_example' from 'tar_example.py'>
+>>> tar_example.hello('Zeste de Savoir')
+TAR: Hello Zeste de Savoir
+```
+
+-----
+
+On pourrait imaginer d'autres exemples de _path hooks_, depuis d'autres types d'archives ou tout ce qui peut prendre la forme d'une collection de fichiers.  
+On pourrait même aller jusqu'à mettre en place un import par le réseau, mais on y reviendra plus tard avec d'autres mécanismes.
