@@ -82,4 +82,5 @@ On utilisera ici le type `ModuleType` (du module `types`) pour définir un objet
 3
 ```
 
-Plutôt que de truquer le cache, nous verrons par la suite comment nous pouvons interagir directement avec le mécanisme d'import pour arriver à ce comportement.
+[[i]]
+| Plutôt que de truquer le cache, nous verrons par la suite comment nous pouvons interagir directement avec le mécanisme d'import pour arriver à ce comportement.
