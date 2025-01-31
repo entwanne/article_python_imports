@@ -70,11 +70,7 @@ Dans le cas contraire, nous penserons à relayer les jetons de la pile avant de 
 >>> def increment_token(token, stack):
 ...     name_token = stack.pop(0)
 ...     stack.clear()
-...     
-...     start = name_token.start
-...     end = token.end
-...     line = name_token.line
-...     
+...     start, end, line = name_token.start, token.end, name_token.line
 ...     yield tokenize.TokenInfo(type=tokenize.OP, string='(', start=start, end=start, line=line)
 ...     yield tokenize.TokenInfo(type=tokenize.NAME, string=name_token.string, start=start, end=start, line=line)
 ...     yield tokenize.TokenInfo(type=tokenize.OP, string=':=', start=start, end=start, line=line)
@@ -152,47 +148,77 @@ Et ce nouveau _hook_ nous permet bien d'importer le module `increment`.
 
 ## Importer un module chiffré
 
-## Importer un module écrit dans un autre langage
+On peut utiliser ce même mécanisme de `FileLoader` pour importer des fichiers chiffrés.
 
-----------
+Pour l'exemple on va imaginer un chiffrement ROT-13[^rot13] du fichier, mais ça fonctionnerait très bien avec un chiffrement AES ou RSA à condition de stocker la clé de déchiffrement dans un endroit accessible sur le système.  
+À l'inverse ça pourrait aussi être utilisé avec un algorithme de signature tel que RSA pour assurer l'authenticité du fichier importé.
 
-5. File loaders
-    - On peut aussi imaginer vouloir lire (et décoder) des fichiers Python chiffrés
-        - On pourra là encore faire appel à un `FileLoader`
-        - Idem, le _loader_ transforme la source et est branché à un _finder_
-    - Enfin on peut étendre le mécanisme d'imports pour gérer d'autres langages que Python
-        - Par exemple un interpréteur brainfuck sous forme de _loader_
-        - On fournit un _loader_ basique qui implémente juste `exec_module`
+[^rot13]: Sachez d'ailleurs que Python 2 offrait nativement la possibilité d'importer des fichiers `.py` encodés en ROT-13 en précisant l'encodage à l'aide d'un commentaire `# coding: rot13` en en-tête de fichier.
+
+Mais dites vous bien que le code déchiffré sera à un moment ou un autre accessible dans la mémoire (et la clé de déchiffrement présente sur le système), ce n'est pas une mesure de sécurité à proprement parler.
+
+Le décodage sera donc opéré dans la méthode `get_source` du `FileLoader`, en faisant appel au module `codecs`.
+
+```pycon
+>>> import codecs
+>>> class Rot13Loader(importlib.abc.FileLoader):
+...     def get_source(self, fullname):
+...         data = self.get_data(self.get_filename(fullname))
+...         return codecs.encode(data.decode(), 'rot_13')
+...
+```
+
+On met en place le _hook_ comme précédemment.
+
+```pycon
+>>> path_hook = importlib.machinery.FileFinder.path_hook(
+...     (importlib.machinery.SourceFileLoader, ['.py']),
+...     (Rot13Loader, ['.pyr']),
+... )
+>>> sys.path_hooks.insert(0, path_hook)
+>>> sys.path_importer_cache.clear()
+```
+
+[[i]]
+| Là encore en raison de l'ordre de priorité ce nouveau _finder_ prend le pas sur les autres _file finders_ existants, nos fichiers Python++ ne sont donc plus importables suite à cet ajout.
+
+Et on est alors en mesure d'importer le fichier `.pyr` suivant.
 
 ```python
-import codecs
-import importlib.abc
-import sys
-from importlib.machinery import FileFinder, SourceFileLoader
-
-
-class Rot13Loader(importlib.abc.FileLoader):
-    def get_source(self, fullname):
-        data = self.get_data(self.get_filename(fullname))
-        return codecs.encode(data.decode(), 'rot_13')
-
-
-path_hook = FileFinder.path_hook(
-    (SourceFileLoader, ['.py']),
-    (Rot13Loader, ['.pyr']),
-)
-sys.path_hooks.insert(0, path_hook)
-sys.path_importer_cache.clear()
-
-import secret
-print(secret.toto())
-import secret2
-print(secret2.toto())
-
-sys.path_hooks.remove(path_hook)
-sys.path_importer_cache.clear()
+qrs gbgb():
+    erghea 4
 ```
-Code: `rot13_loader.py`
+Code: `secret.pyr`
+
+```pycon
+>>> import secret
+>>> secret.toto()
+4
+```
+
+## Importer un module écrit dans un autre langage
+
+Enfin en dernier exemple je vous propose de manipuler directement un AST Python pour produire du _bytecode_.
+L'idée est de permettre d'importer des modules écrits en BrainFuck que l'on compilera en Python à la volée.
+
+*[AST]: Abstract Syntax Tree
+
+Le BrainFuck n'a pas de notion de module ni de fonction, juste de code à exécuter.
+On considérera alors qu'un module BrainFuck définit une unique fonction `run` qui exécute le code source lorsqu'elle est appelée.
+
+Brainfuck est un langage rudimentaire qui fonctionne avec un curseur qui avance le long d'une bande utilisée comme mémoire et permet de lire/écrire à la position du curseur, et de déplacer ce curseur.  
+Il ne dispose alors que de quelques instructions :
+
+- `>`, avancer le curseur d'une position.
+- `<`, reculer d'une position.
+- `+`, incrémenter la valeur située sous le curseur.
+- `-`, décrémenter la valeur située sous le curseur.
+- `.`, afficher la valeur située sous le curseur comme un caractère ASCII.
+- `[` et `]` pour gérer des boucles (boucle tant que la valeur sous le curseur n'est pas nulle).
+
+On partira cette fois d'un _loader_ vide (`importlib.abc.Loader`) et la transformation se fera directement dans la méthode `exec_module`.
+
+----------
 
 ```python
 import ast
