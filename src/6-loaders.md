@@ -215,85 +215,122 @@ Il ne dispose alors que de quelques instructions :
 - `-`, décrémenter la valeur située sous le curseur.
 - `.`, afficher la valeur située sous le curseur comme un caractère ASCII.
 - `[` et `]` pour gérer des boucles (boucle tant que la valeur sous le curseur n'est pas nulle).
+- Et d'autres instructions (comme lire un caractère depuis l'entrée standard) qui ne nous seront pas utiles aussi.
 
-On partira cette fois d'un _loader_ vide (`importlib.abc.Loader`) et la transformation se fera directement dans la méthode `exec_module`.
+Pour les instructions simples, on peut définir une table d'association entre instruction BrainFuck et nœud d'AST Python.
+Les instructions plus complexes (boucles) seront gérées à part.  
+On ajoute aussi dans cette table deux nœuds `init` et `test` qui serviront respectivement à initialiser la mémoire et à tester que la case actuelle n'est pas nulle (pour utiliser comme condition de boucle).
 
-----------
+Afin de représenter la mémoire on utilisera un dictionnaire où les clés seront les positions, ce qui facilitera la gestion d'une mémoire infinie. On peut faire appel à `defaultdict` du module `collections` (qu'il faudra alors s'assurer d'importer à l'initialisation du module) pour s'assurer que toute position correspondra à une case mémoire initialisée (à zéro).
 
-```python
-import ast
-import importlib
-import importlib.abc
-import importlib.machinery
-import pathlib
-import sys
-
-
-class BrainfuckLoader(importlib.abc.Loader):
-    OPS = {
-        '>': ast.parse('cur += 1').body,
-        '<': ast.parse('cur -= 1').body,
-        '+': ast.parse('mem[cur] = mem.get(cur, 0) + 1').body,
-        '-': ast.parse('mem[cur] = mem.get(cur, 0) - 1').body,
-        '.': ast.parse('print(chr(mem.get(cur, 0)), end="")').body,
-        'init': ast.parse('mem, cur = {}, 0').body,
-        'test': ast.parse('mem.get(cur, 0)').body[0].value,
-    }
-
-    def __init__(self, fullname, path):
-        self.path = pathlib.Path(path)
-
-    def exec_module(self, module):
-        content = self.path.read_text()
-        body = [*self.OPS['init']]
-        stack = [body]
-
-        for char in content:
-            current = stack[-1]
-            match char:
-                case '[':
-                    loop = ast.While(
-                        test=self.OPS['test'],
-                        body=[ast.Pass()],
-                        orelse=[],
-                    )
-                    current.append(loop)
-                    stack.append(loop.body)
-                case ']':
-                    stack.pop()
-                case c if c in self.OPS:
-                    current.extend(self.OPS[c])
-                case _:
-                    raise SyntaxError
-
-        tree = ast.Module(
-            body=[
-                ast.FunctionDef(
-                    name='run',
-                    args=ast.arguments(posonlyargs=[], args=[], kwonlyargs=[], kw_defaults=[], defaults=[]),
-                    decorator_list=[],
-                    body=body,
-                ),
-            ],
-            type_ignores=[],
-        )
-
-        ast.fix_missing_locations(tree)
-        code = compile(tree, self.path, 'exec')
-        exec(code, module.__dict__)
-
-
-path_hook = importlib.machinery.FileFinder.path_hook(
-    (importlib.machinery.SourceFileLoader, ['.py']),
-    (BrainfuckLoader, ['.bf']),
-)
-sys.path_hooks.insert(0, path_hook)
-sys.path_importer_cache.clear()
-
-import hello
-hello.run()
-
-sys.path_hooks.remove(path_hook)
-sys.path_importer_cache.clear()
+```pycon
+>>> import ast
+>>> OPS = {
+...     '>': ast.parse('cur += 1').body,
+...     '<': ast.parse('cur -= 1').body,
+...     '+': ast.parse('mem[cur] += 1').body,
+...     '-': ast.parse('mem[cur] -= 1').body,
+...     '.': ast.parse('print(chr(mem[cur]), end="")').body,
+...     'init': ast.parse('from collections import defaultdict\nmem, cur = defaultdict(int), 0').body,
+...     'test': ast.parse('mem[cur] != 0').body[0].value,
+... }
 ```
-Code: `brainfuck_loader.py`
+
+On peut déjà commencer par écrire quelques fonctions utilitaires pour construire notre AST.
+
+Par exemple une fonction `parse_body` qui prend en entrée un texte représentant un code BrainFuck et renvoie une liste de nœuds AST correspondant aux intructions _bytecode_ Python.  
+C'est cette fonction qui devra gérer les boucles, en utilisant pour cela une pile : lorsqu'on rencontre un `[` on initialise un nœud `while` avec notre condition (`OPS['test']`) que l'on ajoute à la pile, et lorsque l'on rencontre un `]` on dépile le nœud présent.
+Chaque instruction rencontrée sera ensuite ajoutée au dernier nœud de la pile.
+
+```pycon
+>>> def parse_body(content):
+...     body = [*OPS['init']]
+...     stack = [body]
+...     for char in content:
+...         current = stack[-1]
+...         match char:
+...             case '[':
+...                 loop = ast.While(
+...                     test=OPS['test'],
+...                     body=[ast.Pass()],
+...                     orelse=[],
+...                 )
+...                 current.append(loop)
+...                 stack.append(loop.body)
+...             case ']':
+...                 stack.pop()
+...             case c if c in OPS:
+...                 current.extend(OPS[c])
+...             case _:
+...                 raise SyntaxError
+...     return body
+... 
+```
+
+Afin de construire un module et une fonction `run`, on ajoute une autre fonction `parse_tree` recevant une liste de nœuds AST (`body`) et construisant les nœuds manquants pour former un module.  
+On pensera à utiliser la fonction `ast.fix_missing_locations` pour compléter les informations de position que nous n'avons pas renseignées sur nos nœuds (et qui permet à Python d'afficher des informations cohérentes sur l'emplacement de l'erreur quand une exception survient).
+
+```pycon
+>>> def parse_tree(body):
+...     tree = ast.Module(
+...         body=[
+...             ast.FunctionDef(
+...                 name='run',
+...                 args=ast.arguments(posonlyargs=[], args=[], kwonlyargs=[], kw_defaults=[], defaults=[]),
+...                 decorator_list=[],
+...                 body=body,
+...             ),
+...         ],
+...         type_ignores=[],
+...     )
+...     ast.fix_missing_locations(tree)
+...     return tree
+...
+```
+
+Enfin on partira cette fois d'un _loader_ vide (`importlib.abc.Loader`) et la transformation du code se fera directement dans la méthode `exec_module`.  
+Les fonctions natives `compile` et `exec` de Python nous permettront respectivement de transformer l'AST en _bytecode_ et d'exécuter le _bytecode_ dans l'espace de noms du module.
+
+```pycon
+>>> import pathlib
+>>> class BrainfuckLoader(importlib.abc.Loader):
+...     def __init__(self, fullname, path):
+...         self.path = pathlib.Path(path)
+...     def exec_module(self, module):
+...         content = self.path.read_text()
+...         body = parse_body(content)
+...         tree = parse_tree(body)
+...         code = compile(tree, self.path, 'exec')
+...         exec(code, module.__dict__)
+...
+```
+
+On ajoute à nouveau un _hook_ pour rendre disponible le _loader_.
+
+```pycon
+>>> path_hook = importlib.machinery.FileFinder.path_hook(
+...     (importlib.machinery.SourceFileLoader, ['.py']),
+...     (BrainfuckLoader, ['.bf']),
+... )
+>>> sys.path_hooks.insert(0, path_hook)
+>>> sys.path_importer_cache.clear()
+```
+
+On peut prendre cet exemple de _hello world_ en BrainFuck.
+
+```brainfuck
+++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>.
+```
+Code: `hello.bf`
+
+Importer le module `hello` donne alors accès à une fonction `run` qui exécute ce _hello world_.
+
+```pycon
+>>> import hello
+>>> hello
+<module 'hello' from '/tmp/hello.bf'>
+>>> dir(hello)
+['__builtins__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__spec__', 'run']
+>>> hello.run()
+Hello World!
+```
