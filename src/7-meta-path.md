@@ -1,5 +1,15 @@
 # Découvrir des modules ailleurs
 
+## Les types de _finders_
+
+## Manipuler le _meta path_
+
+## Modules auto-installables
+
+## Imports réseau
+
+## Imports dynamiques
+
 6. Meta path
     - `FileFinder` s'appuie sur des répertoires (ou apparentés) via des `PathEntryFinder`
     - `sys.meta_path` liste les _meta finders_ utilisés par Python pour rechercher un module
