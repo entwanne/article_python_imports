@@ -10,7 +10,7 @@ Le _loader_ intervient ensuite, associé au _finder_, pour charger le module ain
 
 ## `sys.path_hooks`
 
-On a vu que le `sys.path` permettait de configurer une liste de chemins de découverte modules, mais cette liste ne fonctionne pas seule.
+On a vu que le `sys.path` permettait de configurer une liste de chemins de découverte de modules, mais cette liste ne fonctionne pas seule.
 Afin de savoir comment exploiter un chemin pour y trouver les modules, Python a besoin de lui associer un _finder_.  
 C'est là qu'entre en jeu `sys.path_hooks`.
 
@@ -74,6 +74,7 @@ Intéressons-nous maintenant de plus près à l'objet _finder_.
 Le _finder_ possède une méthode `find_spec` qui reçoit un nom de module et renvoie une « spécification de module » si celui-ci est trouvé (et `None` sinon).
 
 ```pycon
+>>> finder = dir_hook('subdirectory')
 >>> finder.find_spec('dir_example')
 ModuleSpec(name='dir_example', loader=<_frozen_importlib_external.SourceFileLoader object at 0xbadc0ffee>, origin='/tmp/subdirectory/dir_example.py')
 >>> finder.find_spec('zip_example')
@@ -160,7 +161,7 @@ Concernant les _path hooks_, on en était resté à comment Python les utilisait
 On peut maintenant aller plus loin et mieux comprendre les étapes de l'import.
 
 - On construit les _finders_ à l'aide des listes `sys.path` et `sys.path_hooks` (la liste `path_finders` que l'on a construite plus tôt dans ce chapitre).
-- On itère sur ces _finders_ jusqu'à trouver celui qui peut importer notre module (celui renvoie une spécification).
+- On itère sur ces _finders_ jusqu'à trouver celui qui peut importer notre module (celui qui renvoie une spécification).
 - On crée/exécute le module grâce au _loader_ associé à la spécification.
 
 ```python
@@ -241,11 +242,11 @@ b"def hello(name):\n    print('TAR:', 'Hello', name)\n"
 
 Pour nos _finder_ et _loader_, nous allons nous appuyer sur le module `importlib.abc` (la classes abstraites liées à `importlib`) qui propose deux classes qui nous intéressent ici :
 
-- `PathEntryFinder`, un type de _finder_ dédié aux entrées de `sys.path` (nous verrons par la suite qu'il existe un autre type de _finder).
+- `PathEntryFinder`, un type de _finder_ dédié aux entrées de `sys.path` (nous verrons par la suite qu'il existe un autre type de _finder_).
 - `SourceLoader`, un _loader_ similaire au `SourceFileLoader` que nous avons étudié précédemment.
 
 Un `SourceLoader` a juste besoin d'implémenter les méthodes `get_filename` (obtenir le chemin du fichier associé au nom d'un module) et `get_data` (obtenir sous forme de _bytes_ le code source associé à un chemin de fichier), le reste des méthodes est déjà implémenté sur la classe.  
-Pour faire simple, on va considérer que le _loader_ est instancié sur une archive précise (dont le chemin sera donné en argument au constructure) et que le chemin d'un fichier est le chemin à l'intérieur de cette archive.
+Pour faire simple, on va considérer que le _loader_ est instancié sur une archive précise (dont le chemin sera donné en argument au constructeur) et que le chemin d'un fichier est le chemin à l'intérieur de cette archive.
 
 Dans la méthode d'initialisation on s'occupe donc d'ouvrir l'archive et d'extraire les noms de fichiers présents pour créer une table d'association (dictionnaire) entre noms de modules et noms de fichiers.  
 Ainsi dans `get_filename` on peut renvoyer le nom de fichier associé au nom de module dans cette table, et dans `get_data` utiliser le code vu plus haut pour extraire le contenu d'un fichier.

@@ -34,7 +34,7 @@ Dans cet article je présenterai ce qu'il se passe lorsqu'on importe un module e
 | - Les blocs Python purs sont plus faciles à copier/coller, je les utilise pour présenter les fonctions et classes.
 | - Les blocs interactifs permettent de comprendre rapidement le résultat d'une opération, je les utilise pour les exemples courts.
 | 
-| Je concidère cependant que tous les blocs seront exécutés les uns à la suite des autres dans un même interpréteur, ainsi les imports qui ont été faits précédemment ne sont pas répétés.
+| Je considère cependant que tous les blocs seront exécutés les uns à la suite des autres dans un même interpréteur, ainsi les imports qui ont été faits précédemment ne sont pas répétés.
 | 
 | Dans tous les cas je vous conseille de travailler sur des fichiers et d'utiliser l'interpréteur interactif seulement pour essayer / investiguer.
 | 

@@ -6,7 +6,6 @@ Vous avez peut-être pour cela déjà entendu parler du `sys.path`.
 Le module `sys` (système) de Python possède en effet un attribut `path` qui est une liste de chemins de répertoires.
 
 ```pycon
->>> import sys
 >>> sys.path
 ['', '/usr/lib/python312.zip', '/usr/lib/python3.12', '/usr/lib/python3.12/lib-dynload', '/usr/lib/python3.12/site-packages']
 ```
@@ -92,8 +91,13 @@ En reprenant l'exemple du conflit sur le module `random` :
 >>> random
 <module 'random' from '/tmp/random.py'>
 >>> sys.path.remove('')
+>>> sys.path
+['/usr/lib/python312.zip', '/usr/lib/python3.12', '/usr/lib/python3.12/lib-dynload', '/usr/lib/python3.12/site-packages', 'subdirectory']
 >>> importlib.reload(random)
 <module 'random' from '/usr/lib/python3.11/random.py'>
+>>> sys.path.insert(0, '')
+>>> sys.path
+['/usr/lib/python312.zip', '/usr/lib/python3.12', '/usr/lib/python3.12/lib-dynload', '/usr/lib/python3.12/site-packages', 'subdirectory']
 ```
 
 ## Import d'archives zip
@@ -110,7 +114,7 @@ def hello(name):
 Code: `packages.zip/zip_example.py`
 
 [[i]]
-| Pour créer cette archive sous Linux, vous pouvez commencer par créer un fichier `zip_example.py` puis lancer la commande `zip -m pachaes.zip zip_example.py` qui déplacera le fichier dans l'archive `packages.zip` nouvellement créée.
+| Pour créer cette archive sous Linux, vous pouvez commencer par créer un fichier `zip_example.py` puis lancer la commande `zip -m packages.zip zip_example.py` qui déplacera le fichier dans l'archive `packages.zip` nouvellement créée.
 
 Et comme précédemment, nous pouvons ajouter le chemin `packages.zip` au `sys.path` pour rendre atteignable le module `zip_example`.
 
@@ -216,14 +220,14 @@ Par exemple pour notre répertoire `subdirectory` que nous allons transformer en
 ```
 Code: `subdirectory/pyproject.toml`
 
-Que nous installons ensuite dans l'environnement virtuel courant.
+Nous l'installons ensuite dans l'environnement virtuel courant.
 
 ```sh
 (venv) % pip install ./subdirectory
 ...
 ```
 
-Et qui devient directement disponible dans Python sans avoir à manipuler le `sys.path`.
+Et il devient directement disponible dans Python sans avoir à manipuler le `sys.path`.
 
 ```pycon
 >>> import dir_example
@@ -237,4 +241,4 @@ DIR: Hello venv
 | On notera aussi l'option `-e` du `pip install` pour installer un module en mode éditable.
 |
 | Dans notre installation précédente, le fichier `subdirectory/dir_example.py` a été copié dans le répertoire de l'environnement virtuel : les modifications apportées au fichier n'auront alors aucun impact sur le module installé.  
-| En revanche si nous avions utilisé `pip install -e ./subdirectory`, pip aurait créé un lien symbolique vers notre fichier plutôt qu'une copie. Les modifications apportées sont alors directement visibles depuis Python sans avoir à réinstaller le module.
+| En revanche si nous avions utilisé `pip install -e ./subdirectory`, pip aurait créé un lien symbolique vers notre fichier plutôt qu'une copie. Les modifications apportées seraient alors directement visibles depuis Python sans avoir à réinstaller le module.
