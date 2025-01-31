@@ -11,6 +11,7 @@
 | 
 | ```python
 | import importlib.abc
+| import importlib.util
 | import sys
 | import tarfile
 | 
@@ -69,6 +70,7 @@
 | ```python
 | import importlib.abc
 | import importlib.machinery
+| import sys
 | import tokenize
 | 
 | 
@@ -139,6 +141,7 @@
 | import codecs
 | import importlib.abc
 | import importlib.machinery
+| import sys
 | 
 | 
 | class Rot13Loader(importlib.abc.FileLoader):
@@ -171,6 +174,7 @@
 | import importlib.abc
 | import importlib.machinery
 | import pathlib
+| import sys
 | 
 | 
 | OPS = {
