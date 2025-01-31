@@ -1,6 +1,6 @@
 # Conclusion
 
-En conclusion, je vous propose un résumé des différentes étapes de l'import réalisées pr Python :
+En conclusion, je vous propose un résumé des différentes étapes de l'import réalisées par Python :
 
 1. Résolution du nom du module
 2. Recherche du module dans le cache (court-circuit si trouvé)
@@ -13,7 +13,7 @@ En conclusion, je vous propose un résumé des différentes étapes de l'import 
 Je tiens aussi à vous rappeler que le mécanisme des imports est paramétrable à de multiples niveaux et permet de tordre Python comme on le veut, pour autant les exemples présentés dans cet article sont plus farfelus les uns que les autres et ne devraient pas être utilisés dans du code de production.
 Des usages légitimes de ces mécanismes pourraient concerner de l'appel de procédure distante, de la signature de modules ou de la mise en place d'imports paresseux (n'évaluant le contenu qu'au dernier moment) par exemple.
 
-Pour compléter, je peux aussi vous renvoyer vers [ce billet](https://zestedesavoir.com/billets/1842/notes-sur-les-modules-et-packages-en-python/) qui reprend différents point du mécanisme des imports.
+Pour compléter, je peux aussi vous renvoyer vers [ce billet](https://zestedesavoir.com/billets/1842/notes-sur-les-modules-et-packages-en-python/) qui reprend différents points du mécanisme des imports.
 
 Enfin quelques liens utiles vers les pages de références de Python :
 
