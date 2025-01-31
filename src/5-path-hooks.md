@@ -163,19 +163,21 @@ On peut maintenant aller plus loin et mieux comprendre les étapes de l'import.
 - On itère sur ces _finders_ jusqu'à trouver celui qui peut importer notre module (celui renvoie une spécification).
 - On crée/exécute le module grâce au _loader_ associé à la spécification.
 
+```python
+def my_import(name):
+    spec = None
+    for finder in path_finders:
+        spec = finder.find_spec(name)
+        if spec is not None:
+            break
+    if spec is None:
+        raise ModuleNotFoundError(name)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+```
+
 ```pycon
->>> def my_import(name):
-...     spec = None
-...     for finder in path_finders:
-...         spec = finder.find_spec(name)
-...         if spec is not None:
-...             break
-...     if spec is None:
-...         raise ModuleNotFoundError(name)
-...     mod = importlib.util.module_from_spec(spec)
-...     spec.loader.exec_module(mod)
-...     return mod
-...
 >>> my_import('random')
 <module 'random' from '/usr/lib/python3.12/random.py'>
 ```
@@ -248,51 +250,51 @@ Pour faire simple, on va considérer que le _loader_ est instancié sur une arch
 Dans la méthode d'initialisation on s'occupe donc d'ouvrir l'archive et d'extraire les noms de fichiers présents pour créer une table d'association (dictionnaire) entre noms de modules et noms de fichiers.  
 Ainsi dans `get_filename` on peut renvoyer le nom de fichier associé au nom de module dans cette table, et dans `get_data` utiliser le code vu plus haut pour extraire le contenu d'un fichier.
 
-```pycon
->>> import importlib.abc
->>>
->>> class ArchiveLoader(importlib.abc.SourceLoader):
-...     def __init__(self, path):
-...         self.archive = tarfile.open(path, mode='r:gz')
-...         self.filenames = {
-...             name.removesuffix('.py'): name
-...             for name in self.archive.getnames()
-...             if name.endswith('.py')
-...         }
-...     
-...     def get_data(self, name):
-...         member = self.archive.getmember(name)
-...         fobj = self.archive.extractfile(member)
-...         return fobj.read().decode()
-...     
-...     def get_filename(self, name):
-...         return self.filenames[name]
-...
+```python
+import importlib.abc
+
+
+class ArchiveLoader(importlib.abc.SourceLoader):
+    def __init__(self, path):
+        self.archive = tarfile.open(path, mode='r:gz')
+        self.filenames = {
+            name.removesuffix('.py'): name
+            for name in self.archive.getnames()
+            if name.endswith('.py')
+        }
+
+    def get_data(self, name):
+        member = self.archive.getmember(name)
+        fobj = self.archive.extractfile(member)
+        return fobj.read().decode()
+
+    def get_filename(self, name):
+        return self.filenames[name]
 ```
 
 Côté _finder_, notre classe recevra un chemin d'archive et créera directement l'unique _loader_ associé à cette archive.
 La méthode `find_spec` n'aura alors qu'à tester si le nom de module existe dans le _loader_ et renvoyer la spécification associée (on dispose pour cela dans `importlib.util` d'une fonction `spec_from_loader` qui prend un nom et un _loader_).
 
-```pycon
->>> class ArchiveFinder(importlib.abc.PathEntryFinder):
-...     def __init__(self, path):
-...         self.loader = ArchiveLoader(path)
-...     
-...     def find_spec(self, fullname, path):
-...         if fullname in self.loader.filenames:
-...             return importlib.util.spec_from_loader(fullname, self.loader)
-...
+```python
+class ArchiveFinder(importlib.abc.PathEntryFinder):
+    def __init__(self, path):
+        self.loader = ArchiveLoader(path)
+
+    def find_spec(self, fullname, path):
+        if fullname in self.loader.filenames:
+            return importlib.util.spec_from_loader(fullname, self.loader)
 ```
 
 Il ne nous reste plus qu'à créer le _hook_ — une fonction qui reçoit un chemin et renvoie le _finder_ associé, ou lève une erreur `ImportError` si elle ne sait pas le gérer — et à l'ajouter au `sys.path_hooks`.
 
-```pycon
->>> def archive_path_hook(archive_path):
-...     if archive_path.endswith('.tar.gz'):
-...         return ArchiveFinder(archive_path)
-...     raise ImportError
-...
->>> sys.path_hooks.append(archive_path_hook)
+```python
+def archive_path_hook(archive_path):
+    if archive_path.endswith('.tar.gz'):
+        return ArchiveFinder(archive_path)
+    raise ImportError
+
+
+sys.path_hooks.append(archive_path_hook)
 ```
 
 Et l'on peut maintenant importer notre module…
