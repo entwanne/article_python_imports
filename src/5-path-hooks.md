@@ -71,7 +71,7 @@ for path in sys.path:
 ## Objet _finder_
 
 Intéressons-nous maintenant de plus près à l'objet _finder_.
-Le _finder_ possède une méthode `find_spec` qui reçoit un nom de module et renvoie une « spécification de module » si celui-ci est trouvé (et `None` sinon).
+Le _finder_ possède une méthode `find_spec` qui reçoit un nom de module (ainsi qu'une « cible » qui ne nous concerne pas ici et vaut `None` par défaut) et renvoie une « spécification de module » si celui-ci est trouvé (et `None` sinon).
 
 ```pycon
 >>> finder.find_spec('dir_example')
@@ -280,7 +280,7 @@ class ArchiveFinder(importlib.abc.PathEntryFinder):
     def __init__(self, path):
         self.loader = ArchiveLoader(path)
 
-    def find_spec(self, fullname, path):
+    def find_spec(self, fullname, target=None):
         if fullname in self.loader.filenames:
             return importlib.util.spec_from_loader(fullname, self.loader)
 ```
