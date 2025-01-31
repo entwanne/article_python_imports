@@ -215,7 +215,7 @@ Il ne dispose alors que de quelques instructions :
 - `-`, décrémenter la valeur située sous le curseur.
 - `.`, afficher la valeur située sous le curseur comme un caractère ASCII.
 - `[` et `]` pour gérer des boucles (boucle tant que la valeur sous le curseur n'est pas nulle).
-- Et d'autres instructions (comme lire un caractère depuis l'entrée standard) qui ne nous seront pas utiles aussi.
+- `,`, pour lire un caractère depuis l'entrée standard.
 
 Pour les instructions simples, on peut définir une table d'association entre instruction BrainFuck et nœud d'AST Python.
 Les instructions plus complexes (boucles) seront gérées à part.  
@@ -231,6 +231,7 @@ Afin de représenter la mémoire on utilisera un dictionnaire où les clés sero
 ...     '+': ast.parse('mem[cur] += 1').body,
 ...     '-': ast.parse('mem[cur] -= 1').body,
 ...     '.': ast.parse('print(chr(mem[cur]), end="")').body,
+...     ',': ast.parse('mem[cur] = ord(input())').body,
 ...     'init': ast.parse('from collections import defaultdict\nmem, cur = defaultdict(int), 0').body,
 ...     'test': ast.parse('mem[cur] != 0').body[0].value,
 ... }
