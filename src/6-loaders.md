@@ -27,6 +27,7 @@ Bien qu'il ne s'agisse pas d'un fichier Python valide, il est syntaxiquement com
 La fonction `tokenize` du module `tokenize` prend en argument une fonction de type _readline_ (renvoyant une nouvelle ligne de code à chaque appel) sur un fichier binaire et produit des jetons en retour.
 
 ```pycon
+>>> import tokenize
 >>> with open('increment.pypp', 'rb') as f:
 ...     for token in tokenize.tokenize(f.readline):
 ...         print(token)
@@ -50,35 +51,39 @@ Le mécanisme sera relativement simple et utilisera une pile pour détecter quan
 Dans ce cas nous produirons les jetons correspondant à l'expression `(foo := foo +1)` via une fonction `increment_token` implémentée plus bas.  
 Dans le cas contraire, nous penserons à relayer les jetons de la pile avant de la vider et à transmettre directement le jeton reçu.
 
-```pycon
->>> def transform(tokens):
-...     stack = []
-...     for token in tokens:
-...         match token.type:
-...             case tokenize.NAME if not stack:
-...                 stack.append(token)
-...             case tokenize.OP if stack and token.string == '+':
-...                 if len(stack) < 2:
-...                     stack.append(token)
-...                 else:
-...                     yield from increment_token(token, stack)
-...             case _:
-...                 yield from stack
-...                 stack.clear()
-...                 yield token
-...
->>> def increment_token(token, stack):
-...     name_token = stack.pop(0)
-...     stack.clear()
-...     start, end, line = name_token.start, token.end, name_token.line
-...     yield tokenize.TokenInfo(type=tokenize.OP, string='(', start=start, end=start, line=line)
-...     yield tokenize.TokenInfo(type=tokenize.NAME, string=name_token.string, start=start, end=start, line=line)
-...     yield tokenize.TokenInfo(type=tokenize.OP, string=':=', start=start, end=start, line=line)
-...     yield tokenize.TokenInfo(type=tokenize.NAME, string=name_token.string, start=start, end=start, line=line)
-...     yield tokenize.TokenInfo(type=tokenize.OP, string='+', start=start, end=start, line=line)
-...     yield tokenize.TokenInfo(type=tokenize.NUMBER, string='1', start=start, end=start, line=line)
-...     yield tokenize.TokenInfo(type=tokenize.OP, string=')', start=start, end=end, line=line)
-...
+```python
+def transform(tokens):
+    stack = []
+    for token in tokens:
+        match token.type:
+            case tokenize.NAME if not stack:
+                stack.append(token)
+            case tokenize.OP if stack and token.string == '+':
+                if len(stack) < 2:
+                    stack.append(token)
+                else:
+                    yield from increment_token(token, stack)
+            case _:
+                yield from stack
+                stack.clear()
+                yield token
+
+
+def increment_token(token, stack):
+    name_token = stack.pop(0)
+    stack.clear()
+
+    start = name_token.start
+    end = token.end
+    line = name_token.line
+
+    yield tokenize.TokenInfo(type=tokenize.OP, string='(', start=start, end=start, line=line)
+    yield tokenize.TokenInfo(type=tokenize.NAME, string=name_token.string, start=start, end=start, line=line)
+    yield tokenize.TokenInfo(type=tokenize.OP, string=':=', start=start, end=start, line=line)
+    yield tokenize.TokenInfo(type=tokenize.NAME, string=name_token.string, start=start, end=start, line=line)
+    yield tokenize.TokenInfo(type=tokenize.OP, string='+', start=start, end=start, line=line)
+    yield tokenize.TokenInfo(type=tokenize.NUMBER, string='1', start=start, end=start, line=line)
+    yield tokenize.TokenInfo(type=tokenize.OP, string=')', start=start, end=end, line=line)
 ```
 
 Et ça fonctionne bien à l'usage.
@@ -102,15 +107,14 @@ TokenInfo(type=54 (OP), string=')', start=(3, 14), end=(3, 17), line='        pr
 Le _loader_ n'a alors qu'à reproduire ce comportement dans sa méthode `get_source`.
 La méthode devant retourner du code Python (valide) sous forme de texte, on utilisera la fonction `untokenize` pour transformer les jetons produits en texte.
 
-```pycon
->>> class PythonPPLoader(importlib.abc.FileLoader):
-...     def get_source(self, fullname):
-...         path = self.get_filename(fullname)
-...         with open(path, 'rb') as f:
-...             tokens = tokenize.tokenize(f.readline)
-...             tokens = transform(tokens)
-...             return tokenize.untokenize(tokens)
-...
+```python
+class PythonPPLoader(importlib.abc.FileLoader):
+    def get_source(self, fullname):
+        path = self.get_filename(fullname)
+        with open(path, 'rb') as f:
+            tokens = tokenize.tokenize(f.readline)
+            tokens = transform(tokens)
+            return tokenize.untokenize(tokens)
 ```
 
 Pour ce qui est du _path hook_, on reprend donc `FileLoader` présent dans `importlib.machinery` dont on crée un _hook_ pour les fichiers `.py` et `.pypp`.  
@@ -119,14 +123,14 @@ Les fichiers d'extensions non gérées par ce _loader_ (`.pyc`, `.so` et `.dll` 
 
 [^prod]: Dans un code destiné à de la production, il faudrait mettre en place le code gérant ces extensions comme le fait Python par défaut.
 
-```pycon
->>> import importlib.machinery
->>> path_hook = importlib.machinery.FileFinder.path_hook(
-...     (importlib.machinery.SourceFileLoader, ['.py']),
-...     (PythonPPLoader, ['.pypp']),
-... )
->>> sys.path_hooks.insert(0, path_hook)
->>> sys.path_importer_cache.clear()
+```python
+import importlib.machinery
+path_hook = importlib.machinery.FileFinder.path_hook(
+    (importlib.machinery.SourceFileLoader, ['.py']),
+    (PythonPPLoader, ['.pypp']),
+)
+sys.path_hooks.insert(0, path_hook)
+sys.path_importer_cache.clear()
 ```
 
 Et ce nouveau _hook_ nous permet bien d'importer le module `increment`.
@@ -159,24 +163,25 @@ Mais dites vous bien que le code déchiffré sera à un moment ou un autre acces
 
 Le décodage sera donc opéré dans la méthode `get_source` du `FileLoader`, en faisant appel au module `codecs`.
 
-```pycon
->>> import codecs
->>> class Rot13Loader(importlib.abc.FileLoader):
-...     def get_source(self, fullname):
-...         data = self.get_data(self.get_filename(fullname))
-...         return codecs.encode(data.decode(), 'rot_13')
-...
+```python
+import codecs
+
+
+class Rot13Loader(importlib.abc.FileLoader):
+    def get_source(self, fullname):
+        data = self.get_data(self.get_filename(fullname))
+        return codecs.encode(data.decode(), 'rot_13')
 ```
 
 On met en place le _hook_ comme précédemment.
 
-```pycon
->>> path_hook = importlib.machinery.FileFinder.path_hook(
-...     (importlib.machinery.SourceFileLoader, ['.py']),
-...     (Rot13Loader, ['.pyr']),
-... )
->>> sys.path_hooks.insert(0, path_hook)
->>> sys.path_importer_cache.clear()
+```python
+path_hook = importlib.machinery.FileFinder.path_hook(
+    (importlib.machinery.SourceFileLoader, ['.py']),
+    (Rot13Loader, ['.pyr']),
+)
+sys.path_hooks.insert(0, path_hook)
+sys.path_importer_cache.clear()
 ```
 
 [[i]]
@@ -223,18 +228,20 @@ On ajoute aussi dans cette table deux nœuds `init` et `test` qui serviront resp
 
 Afin de représenter la mémoire on utilisera un dictionnaire où les clés seront les positions, ce qui facilitera la gestion d'une mémoire infinie. On peut faire appel à `defaultdict` du module `collections` (qu'il faudra alors s'assurer d'importer à l'initialisation du module) pour s'assurer que toute position correspondra à une case mémoire initialisée (à zéro).
 
-```pycon
->>> import ast
->>> OPS = {
-...     '>': ast.parse('cur += 1').body,
-...     '<': ast.parse('cur -= 1').body,
-...     '+': ast.parse('mem[cur] += 1').body,
-...     '-': ast.parse('mem[cur] -= 1').body,
-...     '.': ast.parse('print(chr(mem[cur]), end="")').body,
-...     ',': ast.parse('mem[cur] = ord(input())').body,
-...     'init': ast.parse('from collections import defaultdict\nmem, cur = defaultdict(int), 0').body,
-...     'test': ast.parse('mem[cur] != 0').body[0].value,
-... }
+```python
+import ast
+
+
+OPS = {
+    '>': ast.parse('cur += 1').body,
+    '<': ast.parse('cur -= 1').body,
+    '+': ast.parse('mem[cur] += 1').body,
+    '-': ast.parse('mem[cur] -= 1').body,
+    '.': ast.parse('print(chr(mem[cur]), end="")').body,
+    ',': ast.parse('mem[cur] = ord(input())').body,
+    'init': ast.parse('from collections import defaultdict\nmem, cur = defaultdict(int), 0').body,
+    'test': ast.parse('mem[cur] != 0').body[0].value,
+}
 ```
 
 On peut déjà commencer par écrire quelques fonctions utilitaires pour construire notre AST.
@@ -243,78 +250,79 @@ Par exemple une fonction `parse_body` qui prend en entrée un texte représentan
 C'est cette fonction qui devra gérer les boucles, en utilisant pour cela une pile : lorsqu'on rencontre un `[` on initialise un nœud `while` avec notre condition (`OPS['test']`) que l'on ajoute à la pile, et lorsque l'on rencontre un `]` on dépile le nœud présent.
 Chaque instruction rencontrée sera ensuite ajoutée au dernier nœud de la pile.
 
-```pycon
->>> def parse_body(content):
-...     body = [*OPS['init']]
-...     stack = [body]
-...     for char in content:
-...         current = stack[-1]
-...         match char:
-...             case '[':
-...                 loop = ast.While(
-...                     test=OPS['test'],
-...                     body=[ast.Pass()],
-...                     orelse=[],
-...                 )
-...                 current.append(loop)
-...                 stack.append(loop.body)
-...             case ']':
-...                 stack.pop()
-...             case c if c in OPS:
-...                 current.extend(OPS[c])
-...             case _:
-...                 raise SyntaxError
-...     return body
-... 
+```python
+def parse_body(content):
+    body = [*OPS['init']]
+    stack = [body]
+
+    for char in content:
+        current = stack[-1]
+        match char:
+            case '[':
+                loop = ast.While(
+                    test=OPS['test'],
+                    body=[ast.Pass()],
+                    orelse=[],
+                )
+                current.append(loop)
+                stack.append(loop.body)
+            case ']':
+                stack.pop()
+            case c if c in OPS:
+                current.extend(OPS[c])
+            case _:
+                raise SyntaxError
+
+    return body
 ```
 
 Afin de construire un module et une fonction `run`, on ajoute une autre fonction `parse_tree` recevant une liste de nœuds AST (`body`) et construisant les nœuds manquants pour former un module.  
 On pensera à utiliser la fonction `ast.fix_missing_locations` pour compléter les informations de position que nous n'avons pas renseignées sur nos nœuds (et qui permet à Python d'afficher des informations cohérentes sur l'emplacement de l'erreur quand une exception survient).
 
-```pycon
->>> def parse_tree(body):
-...     tree = ast.Module(
-...         body=[
-...             ast.FunctionDef(
-...                 name='run',
-...                 args=ast.arguments(posonlyargs=[], args=[], kwonlyargs=[], kw_defaults=[], defaults=[]),
-...                 decorator_list=[],
-...                 body=body,
-...             ),
-...         ],
-...         type_ignores=[],
-...     )
-...     ast.fix_missing_locations(tree)
-...     return tree
-...
+```python
+def parse_tree(body):
+    tree = ast.Module(
+        body=[
+            ast.FunctionDef(
+                name='run',
+                args=ast.arguments(posonlyargs=[], args=[], kwonlyargs=[], kw_defaults=[], defaults=[]),
+                decorator_list=[],
+                body=body,
+            ),
+        ],
+        type_ignores=[],
+    )
+    ast.fix_missing_locations(tree)
+    return tree
 ```
 
 Enfin on partira cette fois d'un _loader_ vide (`importlib.abc.Loader`) et la transformation du code se fera directement dans la méthode `exec_module`.  
 Les fonctions natives `compile` et `exec` de Python nous permettront respectivement de transformer l'AST en _bytecode_ et d'exécuter le _bytecode_ dans l'espace de noms du module.
 
-```pycon
->>> import pathlib
->>> class BrainfuckLoader(importlib.abc.Loader):
-...     def __init__(self, fullname, path):
-...         self.path = pathlib.Path(path)
-...     def exec_module(self, module):
-...         content = self.path.read_text()
-...         body = parse_body(content)
-...         tree = parse_tree(body)
-...         code = compile(tree, self.path, 'exec')
-...         exec(code, module.__dict__)
-...
+```python
+import pathlib
+
+
+class BrainfuckLoader(importlib.abc.Loader):
+    def __init__(self, fullname, path):
+        self.path = pathlib.Path(path)
+    def exec_module(self, module):
+        content = self.path.read_text()
+        body = parse_body(content)
+        tree = parse_tree(body)
+        code = compile(tree, self.path, 'exec')
+        exec(code, module.__dict__)
 ```
 
 On ajoute à nouveau un _hook_ pour rendre disponible le _loader_.
 
-```pycon
->>> path_hook = importlib.machinery.FileFinder.path_hook(
-...     (importlib.machinery.SourceFileLoader, ['.py']),
-...     (BrainfuckLoader, ['.bf']),
-... )
->>> sys.path_hooks.insert(0, path_hook)
->>> sys.path_importer_cache.clear()
+```python
+path_hook = importlib.machinery.FileFinder.path_hook(
+    (importlib.machinery.SourceFileLoader, ['.py']),
+    (BrainfuckLoader, ['.bf']),
+)
+sys.path_hooks.insert(0, path_hook)
+sys.path_importer_cache.clear()
 ```
 
 On peut prendre cet exemple de _hello world_ en BrainFuck.

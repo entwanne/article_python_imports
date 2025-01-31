@@ -64,13 +64,15 @@ Mais les cas où l'on a besoin de réimporter un module sont assez rares en réa
 Enfin ce cache nous permet aussi de falsifier le mécanisme d'import, en attribuant dynamiquement un objet-module à une clé du cache.  
 On utilisera ici le type `ModuleType` (du module `types`) pour définir un objet qui soit un vrai module, mais n'importe quel type d'objet pourrait être stocké dans le cache.
 
+```python
+from types import ModuleType
+
+class TestModule(ModuleType):
+    def addition(self, a, b):
+        return a + b
+```
+
 ```pycon
->>> from types import ModuleType
->>> 
->>> class TestModule(ModuleType):
-...     def addition(self, a, b):
-...         return a + b
-... 
 >>> sys.modules['test'] = TestModule('test')
 >>> import test
 >>> test

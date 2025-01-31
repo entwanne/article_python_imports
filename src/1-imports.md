@@ -123,6 +123,6 @@ del even
 Juste après l'import, on cherche donc à accéder à son contenu (ici la fonction `is_even`) : mais ce contenu n'existe pas encore (le module `even` est toujours vide à cette étape) et n'existera qu'après l'exécution.
 Ainsi, utiliser `from even import is_even` dans le module `odd` lèverait une erreur d'import parce que l'import survient dans `odd` avant que l'exécution du module `even` ne soit terminée.
 
-```pycon
+```
 ImportError: cannot import name 'is_even' from partially initialized module 'even' (most likely due to a circular import) (even.py)
 ```
