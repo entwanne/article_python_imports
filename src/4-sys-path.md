@@ -8,7 +8,7 @@ Le module `sys` (système) de Python possède en effet un attribut `path` qui es
 ```pycon
 >>> import sys
 >>> sys.path
-['', '/usr/lib/python312.zip', '/usr/lib/python3.12', '/usr/lib/python3.12/lib-dynload', '/usr/lib/python3.12/site-packages']
+['', '/usr/lib/python313.zip', '/usr/lib/python3.13', '/usr/lib/python3.13/lib-dynload', '/usr/lib/python3.13/site-packages']
 ```
 
 Ce sont les répertoires que Python utilise pour trouver les fichiers correspondant aux modules.
@@ -18,7 +18,7 @@ Si vous êtes au sein d'un environnement virtuel (_virtualenv_), les répertoire
 
 ```pycon
 >>> sys.path
-['', '/usr/lib/python312.zip', '/usr/lib/python3.12', '/usr/lib/python3.12/lib-dynload', '/tmp/venv/lib/python3.12/site-packages']
+['', '/usr/lib/python313.zip', '/usr/lib/python3.13', '/usr/lib/python3.13/lib-dynload', '/tmp/venv/lib/python3.13/site-packages']
 ```
 
 Les répertoires sont classés dans la liste par ordre de priorité : quand on cherche à importer un module (`random` par exemple), Python les parcourt de la gauche vers la droite jusqu'à trouver un fichier `random.py` dans l'un d'eux[^package].
@@ -28,15 +28,15 @@ Les répertoires sont classés dans la liste par ordre de priorité : quand on 
 ```pycon
 >>> import random
 >>> random
-<module 'random' from '/usr/lib/python3.12/random.py'>
+<module 'random' from '/usr/lib/python3.13/random.py'>
 ```
 
 Ici le module est trouvé dans le 3ème répertoire de la liste.
-Si par contre je disposais d'un fichier `random.py` dans mon répertoire courant (`/tmp` dans mon cas), celui-ci serait trouvé en priorité.
+Si par contre je disposais d'un fichier `random.py` (un fichier vide par exemple) dans mon répertoire courant (`/tmp` dans mon cas), celui-ci serait trouvé en priorité.
 
 ```pycon
->>> import random
->>> random
+>>> import importlib
+>>> importlib.reload(random)
 <module 'random' from '/tmp/random.py'>
 ```
 
@@ -96,6 +96,11 @@ En reprenant l'exemple du conflit sur le module `random` :
 <module 'random' from '/usr/lib/python3.11/random.py'>
 ```
 
+[[a]]
+| Pensez à quitter/relancer l'interpréteur Python après cet exemple ou à rajouter manuellement `''` au `sys.path` afin que le répertoire courant devienne à nouveau disponible.
+|
+| Vous pouvez aussi supprimer le fichier `random.py` du répertoire courant pour éviter tout problème ultérieur.
+
 ## Import d'archives zip
 
 Vous avez peut-être remarqué que notre `sys.path` ne contenait pas que des chemins de répertoires, un fichier `.zip` y était aussi présent.
@@ -110,11 +115,12 @@ def hello(name):
 Code: `packages.zip/zip_example.py`
 
 [[i]]
-| Pour créer cette archive sous Linux, vous pouvez commencer par créer un fichier `zip_example.py` puis lancer la commande `zip -m pachaes.zip zip_example.py` qui déplacera le fichier dans l'archive `packages.zip` nouvellement créée.
+| Pour créer cette archive sous Linux, vous pouvez commencer par créer un fichier `zip_example.py` puis lancer la commande `zip -m packages.zip zip_example.py` qui déplacera le fichier dans l'archive `packages.zip` nouvellement créée.
 
 Et comme précédemment, nous pouvons ajouter le chemin `packages.zip` au `sys.path` pour rendre atteignable le module `zip_example`.
 
 ```pycon
+>>> import sys
 >>> sys.path.append('packages.zip')
 >>> import zip_example
 >>> zip_example
@@ -142,7 +148,7 @@ Que nous pouvons ensuite exécuter directement avec Python.
 
 ```sh
 % python program.zip
-['/tmp/program.zip', '/usr/lib/python312.zip', '/usr/lib/python3.12', '/usr/lib/python3.12/lib-dynload', '/usr/lib/python3.12/site-packages']
+['/tmp/program.zip', '/usr/lib/python313.zip', '/usr/lib/python3.13', '/usr/lib/python3.13/lib-dynload', '/usr/lib/python3.13/site-packages']
 ZIP: Hello zip exec
 ```
 
@@ -207,23 +213,23 @@ y> 3
 
 Pour toutes ces raisons il est préférable de laisser Python gérer cela par lui-même et de se reposer uniquement sur les répertoires d'installation pour rendre nos modules accessibles, en utilisant `pip` afin de les installer.
 
-Il suffit d'un `pyproject.toml` rudimentaire pour forger un paquet Python minimal et le rendre installable via `pip`
+Il suffit d'un `pyproject.toml` rudimentaire (voire vide) pour forger un paquet Python minimal et le rendre installable via `pip`
 
 Par exemple pour notre répertoire `subdirectory` que nous allons transformer en paquet :
 
 ```toml
-...
+name = "dir-example"
 ```
 Code: `subdirectory/pyproject.toml`
 
-Que nous installons ensuite dans l'environnement virtuel courant.
+Nous l'installons ensuite dans l'environnement virtuel courant.
 
 ```sh
 (venv) % pip install ./subdirectory
 ...
 ```
 
-Et qui devient directement disponible dans Python sans avoir à manipuler le `sys.path`.
+Et il devient directement disponible dans Python sans avoir à manipuler le `sys.path`.
 
 ```pycon
 >>> import dir_example
@@ -237,4 +243,4 @@ DIR: Hello venv
 | On notera aussi l'option `-e` du `pip install` pour installer un module en mode éditable.
 |
 | Dans notre installation précédente, le fichier `subdirectory/dir_example.py` a été copié dans le répertoire de l'environnement virtuel : les modifications apportées au fichier n'auront alors aucun impact sur le module installé.  
-| En revanche si nous avions utilisé `pip install -e ./subdirectory`, pip aurait créé un lien symbolique vers notre fichier plutôt qu'une copie. Les modifications apportées sont alors directement visibles depuis Python sans avoir à réinstaller le module.
+| En revanche si nous avions utilisé `pip install -e ./subdirectory`, pip aurait créé un lien symbolique vers notre fichier plutôt qu'une copie. Les modifications apportées seraient alors directement visibles depuis Python sans avoir à réinstaller le module.

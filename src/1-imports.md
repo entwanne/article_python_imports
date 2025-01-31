@@ -15,18 +15,18 @@ Python crée alors une variable du même nom référençant le module en tant qu
 ```pycon
 >>> import pathlib
 >>> pathlib
-<module 'pathlib' from '/usr/lib/python3.12/pathlib.py'>
+<module 'pathlib' from '/usr/lib/python3.13/pathlib.py'>
 >>> pathlib.Path
 <class 'pathlib.Path'>
 ```
 
-Derrière ce mot-clé, Python réalise un appel à la fonction `__import__` qui reçoit le nom du module, et l'assigne à la variable.  
+Derrière ce mot-clé, Python réalise un appel à la fonction `__import__` qui reçoit le nom du module, et l'assigne à la variable cible.  
 Le code précédent est alors équivalent à :
 
 ```pycon
 >>> pathlib = __import__('pathlib')
 >>> pathlib
-<module 'pathlib' from '/usr/lib/python3.12/pathlib.py'>
+<module 'pathlib' from '/usr/lib/python3.13/pathlib.py'>
 ```
 
 Cela permet donc de réaliser des imports dynamiques / programmatiques : importer un module dont le nom n'est pas connu avant le lancement du programme (dépendant d'une entrée utilisateur, d'une configuration, d'un échange réseau ou autre).
@@ -39,7 +39,7 @@ Là encore, celle-ci se comporte comme attendu.
 >>> import importlib
 >>> pathlib = importlib.import_module('pathlib')
 >>> pathlib
-<module 'pathlib' from '/usr/lib/python3.12/pathlib.py'>
+<module 'pathlib' from '/usr/lib/python3.13/pathlib.py'>
 ```
 
 ## Chargement et exécution

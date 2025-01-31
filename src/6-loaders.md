@@ -108,6 +108,9 @@ Le _loader_ n'a alors qu'à reproduire ce comportement dans sa méthode `get_sou
 La méthode devant retourner du code Python (valide) sous forme de texte, on utilisera la fonction `untokenize` pour transformer les jetons produits en texte.
 
 ```python
+import importlib.abc
+
+
 class PythonPPLoader(importlib.abc.FileLoader):
     def get_source(self, fullname):
         path = self.get_filename(fullname)
@@ -125,6 +128,7 @@ Les fichiers d'extensions non gérées par ce _loader_ (`.pyc`, `.so` et `.dll` 
 
 ```python
 import importlib.machinery
+import sys
 path_hook = importlib.machinery.FileFinder.path_hook(
     (importlib.machinery.SourceFileLoader, ['.py']),
     (PythonPPLoader, ['.pypp']),
@@ -152,7 +156,7 @@ Et ce nouveau _hook_ nous permet bien d'importer le module `increment`.
 
 ## Importer un module chiffré
 
-On peut utiliser ce même mécanisme de `FileLoader` pour importer des fichiers chiffrés.
+On peut utiliser le même mécanisme de `FileLoader` pour importer des fichiers chiffrés.
 
 Pour l'exemple on va imaginer un chiffrement ROT-13[^rot13] du fichier, mais ça fonctionnerait très bien avec un chiffrement AES ou RSA à condition de stocker la clé de déchiffrement dans un endroit accessible sur le système.  
 À l'inverse ça pourrait aussi être utilisé avec un algorithme de signature tel que RSA pour assurer l'authenticité du fichier importé.
@@ -226,7 +230,7 @@ Pour les instructions simples, on peut définir une table d'association entre in
 Les instructions plus complexes (boucles) seront gérées à part.  
 On ajoute aussi dans cette table deux nœuds `init` et `test` qui serviront respectivement à initialiser la mémoire et à tester que la case actuelle n'est pas nulle (pour utiliser comme condition de boucle).
 
-Afin de représenter la mémoire on utilisera un dictionnaire où les clés seront les positions, ce qui facilitera la gestion d'une mémoire infinie. On peut faire appel à `defaultdict` du module `collections` (qu'il faudra alors s'assurer d'importer à l'initialisation du module) pour s'assurer que toute position correspondra à une case mémoire initialisée (à zéro).
+Afin de représenter la mémoire on utilisera un dictionnaire où les clés seront les positions, ce qui facilitera la gestion d'une mémoire infinie. On peut faire appel à `defaultdict` du module `collections` (qu'il faudra alors importer à l'initialisation du module) pour s'assurer que toute position correspond à une case mémoire initialisée (à zéro).
 
 ```python
 import ast
@@ -246,7 +250,7 @@ OPS = {
 
 On peut déjà commencer par écrire quelques fonctions utilitaires pour construire notre AST.
 
-Par exemple une fonction `parse_body` qui prend en entrée un texte représentant un code BrainFuck et renvoie une liste de nœuds AST correspondant aux intructions _bytecode_ Python.  
+Par exemple une fonction `parse_body` qui prend en entrée un texte représentant un code BrainFuck et renvoie une liste de nœuds AST correspondant aux instructions Python.  
 C'est cette fonction qui devra gérer les boucles, en utilisant pour cela une pile : lorsqu'on rencontre un `[` on initialise un nœud `while` avec notre condition (`OPS['test']`) que l'on ajoute à la pile, et lorsque l'on rencontre un `]` on dépile le nœud présent.
 Chaque instruction rencontrée sera ensuite ajoutée au dernier nœud de la pile.
 
@@ -277,7 +281,7 @@ def parse_body(content):
 ```
 
 Afin de construire un module et une fonction `run`, on ajoute une autre fonction `parse_tree` recevant une liste de nœuds AST (`body`) et construisant les nœuds manquants pour former un module.  
-On pensera à utiliser la fonction `ast.fix_missing_locations` pour compléter les informations de position que nous n'avons pas renseignées sur nos nœuds (et qui permet à Python d'afficher des informations cohérentes sur l'emplacement de l'erreur quand une exception survient).
+On pensera à appeler la fonction `ast.fix_missing_locations` pour compléter les informations de position que nous n'avons pas renseignées sur nos nœuds (et qui permet à Python d'afficher des informations cohérentes sur l'emplacement de l'erreur quand une exception survient).
 
 ```python
 def parse_tree(body):
@@ -306,6 +310,7 @@ import pathlib
 class BrainfuckLoader(importlib.abc.Loader):
     def __init__(self, fullname, path):
         self.path = pathlib.Path(path)
+
     def exec_module(self, module):
         content = self.path.read_text()
         body = parse_body(content)

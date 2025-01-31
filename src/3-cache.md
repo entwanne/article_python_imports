@@ -13,9 +13,11 @@ Ainsi, l'import d'un module déjà importé intervient au tout début et court-c
 
 ```pycon
 >>> import my_module
+Coucou
+>>> import my_module
 ```
 
-On voit que cette fois-ci importer `my_module` ne provoque pas d'effet de bord (la première fois il était affiché « Coucou »), c'est que le code du module n'a pas été réexécuté.  
+On voit que la deuxième fois, importer `my_module` ne provoque pas d'effet de bord, c'est que le code du module n'a pas été réexécuté.  
 Ce cache est partagé par les différents mécanismes d'import de Python, telle que la fonction `import_module`.
 
 ## Manipuler le cache
@@ -52,6 +54,7 @@ On serait tenté de simplement supprimer la clé correspondante dans `sys.module
 Cette fonction prend directement l'objet module en argument, et le renvoie après l'avoir rechargé.
 
 ```pycon
+>>> import importlib
 >>> importlib.reload(my_module)
 Coucou
 <module 'my_module' from 'my_module.py'>

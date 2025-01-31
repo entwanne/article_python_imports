@@ -63,7 +63,7 @@ Par exemple, on peut imaginer un système d'import avec une solution de repli lo
 Pour prévenir de tout problème de sécurité (exécution de code arbitraire via l'installation de paquets malicieux hébergés sur PyPI), on limitera la fonctionnalité à un ensemble prédéfini de paquets.
 
 On met donc en place un _finder_ qui réalise un appel au programme `pip` (via la fonction `run` du module `subprocess` pour exécuter une commande sur le système) puis appelle à nouveau `find_spec`.
-Le _finder_ sera initialisé avec la liste des modules autorisés, et nous penserons à mettre en place un mécanisme de nettoyage pour désinstaller les modules à la sortie du programme (en utilisant `atexit` qui permet d'enregistrer des fonctions à exécuter quand le programme se coupe).
+Le _finder_ sera initialisé avec la liste des modules autorisés, et nous penserons à mettre en place un mécanisme de nettoyage pour désinstaller les modules à la sortie du programme (en utilisant `atexit` qui permet d'enregistrer des fonctions à exécuter quand le programme se termine).
 
 ```python
 import atexit
@@ -119,7 +119,7 @@ Ce n'est pas le meilleur outil pour ça mais ça a l'avantage de ne pas demander
 
 Le serveur fonctionne à l'aide un gestionnaire de requête (_request handler_) basé sur la classe `BaseHTTPRequestHandler`.
 Ce gestionnaire possède des méthodes qui seront appelées pour chaque action HTTP, en l'occurrence seulement `HEAD` et `GET` nous seront utiles ici.  
-La première permet de savoir si un chemin existe et la deuxième de récupérer le contenu associé. Les deux renvoient le statut HTTP adapt (200 si la page est trouvée, 404 sinon) à la requête.
+La première permet de savoir si un chemin existe et la deuxième de récupérer le contenu associé. Les deux renvoient le statut HTTP adapté (200 si la page est trouvée, 404 sinon) à la requête.
 
 Pour simplifier les choses, nous utiliserons un dictionnaire en tant qu'attribut de classe associant les contenus des fichiers à leur chemin (nous n'aurons besoin que d'un fichier `remote.py`).
 
@@ -151,7 +151,7 @@ class ServerHandler(http.server.BaseHTTPRequestHandler):
             self.send_error(404)
 ```
 
-On utilise ensuite la classe `HTTPServer` pour démarrer le serveur (dans un _thread_) en lui précisant l'adresse (`''` pour lancer en local uniquement), le port et la classe gestionnaire de requêtes.
+On utilise ensuite la classe `HTTPServer` pour démarrer le serveur (dans un _thread_) en lui précisant l'adresse (`''` pour le lancer en local uniquement), le port et la classe gestionnaire de requêtes.
 
 ```python
 import threading
@@ -159,13 +159,9 @@ import threading
 server = http.server.HTTPServer(('', 8080), ServerHandler)
 thr = threading.Thread(target=server.serve_forever)
 thr.start()
-
-# On ferme le serveur et on attend proprement le thread à la fin du programme
-atexit.register(thr.join)
-atexit.register(server.shutdown)
 ```
 
-Nous avons maintenant un serveur web qui tourne sur le port 8080, vous pouvez le constater en accédant à http://localhost:8080/remote.py depuis votre navigateur favori.
+Nous avons maintenant un serveur web qui tourne sur le port 8080, vous pouvez le constater en accédant à <http://localhost:8080/remote.py> depuis votre navigateur favori.
 
 Côté client, on mettra en place un `SourceLoader` faisant ses requêtes au serveur à l'aide de la fonction `urlopen` du module `urllib.request` (prenant une URL en argument et renvoyant un fichier).
 On ajoute une méthode `exists` à notre _loader_ qui nous sera utile pour la suite.
@@ -216,14 +212,22 @@ Enfin on branche le tout au _meta path_ et on importe notre module distant.
 ```pycon
 >>> sys.meta_path.append(NetworkFinder('http://localhost:8080'))
 >>> import remote
-127.0.0.1 - - [26/Jul/2025 21:44:27] "HEAD /remote.py HTTP/1.1" 200 -
-127.0.0.1 - - [26/Jul/2025 21:44:27] "GET /remote.py HTTP/1.1" 200 -
+127.0.0.1 - - [21/Jul/2025 12:34:56] "HEAD /remote.py HTTP/1.1" 200 -
+127.0.0.1 - - [21/Jul/2025 12:34:56] "GET /remote.py HTTP/1.1" 200 -
 >>> remote.test()
 Hello
 ```
 
 [[i]]
 | On constate bien via les logs du serveur les appels HTTP qui sont réalisés lors de l'import.
+
+Et on procède à un petit nettoyage pour la route en coupant le serveur et le _thread_.
+
+```pycon
+del sys.meta_path[-1]
+server.shutdown()
+thr.join()
+```
 
 ## Imports dynamiques
 
@@ -243,7 +247,7 @@ class DynamicLoader(importlib.abc.Loader):
         module.__dict__.update(self.attributes)
 ```
 
-Quant au _finder_, il s'occupe de découper le nom du module si celui correspond au préfixe demandé, et d'évaluer les attributs pour les renseigner au _loader_.
+Quant au _finder_, il s'occupe de découper le nom du module si celui-ci correspond au préfixe demandé, et d'évaluer les attributs pour les renseigner au _loader_.
 
 ```python
 class DynamicFinder(importlib.abc.MetaPathFinder):
