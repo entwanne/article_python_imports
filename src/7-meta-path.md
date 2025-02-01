@@ -2,6 +2,15 @@
 
 ## Les types de _finders_
 
+Jusqu'ici nous avons étudié uniquement des `PathEntryFinder` (`FileFinder` en étant un cas particulier), mais je vous précisais qu'il en existait deux types.
+
+- PathEntryFinder
+    - utilise des répertoires (ou assimilés, sys.path) sur le système de fichiers pour localiser les modules
+- MetaPathFinder
+    - totalement libres de trouver des modules où bon leur semble
+    - `find_spec` reçoit un argument supplémentaire
+    - `PathFinder` est un `MetaPathFinder` qui opère la gestion du `sys.path`/`sys.path_hooks` (et donc gère les `PathEntryFinder`)
+
 ## Manipuler le _meta path_
 
 ## Modules auto-installables
