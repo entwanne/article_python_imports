@@ -20,6 +20,7 @@ Lorsqu'on demande à Python d'importer `collections.abc`, il doit alors premièr
 Là-dessus le comportement de la fonction `import_module` diffère un peu (et c'est l'une de ses principales différences avec `__import__`) : celui-ci renvoie directement le module cible (`collections.abc`) et non le module parent (`collections`), puisqu'il n'a pas vocation à être stocké dans une variable nommée `collections`.
 
 ```pycon
+>>> import importlib
 >>> importlib.import_module('collections.abc')
 <module 'collections.abc' from '/usr/lib/python3.12/collections/abc.py'>
 >>> __import__('collections.abc')
@@ -27,7 +28,7 @@ Là-dessus le comportement de la fonction `import_module` diffère un peu (et c'
 ```
 
 Aussi comme je le disais, cet import implique donc d'exécuter le code de chacun des modules de la hiérarchie.  
-Dans le cas d'un paquet (qui prend la forme d'un répertoire sur le système de fichiers), on le voit dans les exemples qui précèdent, le code à exécuter est stocké dans le fichier `__init__.py` du paquet.
+Dans le cas d'un paquet (qui prend la forme d'un répertoire sur le système de fichiers), on le voit dans les résultats des exemples qui précèdent, le code à exécuter est stocké dans le fichier `__init__.py` du paquet.
 
 Pour bien comprendre ce qu'il se passe, on peut prendre la structure de paquet suivante :
 

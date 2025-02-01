@@ -25,6 +25,7 @@ On voit que par défaut le `path_hooks` est composé de deux entrées, l'une tra
 Le _hook_ traitant les zip est donc considéré en priorité par rapport à celui traitant les répertoires.
 
 ```pycon
+>>> import sys
 >>> sys.path_hooks
 [<class 'zipimport.zipimporter'>, <function FileFinder.path_hook.<locals>.path_hook_for_FileFinder at 0xdeadbeef>]
 ```
@@ -78,7 +79,7 @@ Le _finder_ possède une méthode `find_spec` qui reçoit un nom de module et re
 >>> finder.find_spec('dir_example')
 ModuleSpec(name='dir_example', loader=<_frozen_importlib_external.SourceFileLoader object at 0xbadc0ffee>, origin='/tmp/subdirectory/dir_example.py')
 >>> finder.find_spec('zip_example')
->>> finder.find_spec('random')
+>>> finder.find_spec('pathlib')
 >>> finder.find_spec('unknown')
 ```
 
@@ -179,8 +180,8 @@ def my_import(name):
 ```
 
 ```pycon
->>> my_import('random')
-<module 'random' from '/usr/lib/python3.12/random.py'>
+>>> my_import('pathlib')
+<module 'pathlib' from '/usr/lib/python3.12/pathlib.py'>
 ```
 
 ## Ajouter notre propre _hook_

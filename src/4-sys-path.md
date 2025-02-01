@@ -31,11 +31,11 @@ Les répertoires sont classés dans la liste par ordre de priorité : quand on 
 ```
 
 Ici le module est trouvé dans le 3ème répertoire de la liste.
-Si par contre je disposais d'un fichier `random.py` dans mon répertoire courant (`/tmp` dans mon cas), celui-ci serait trouvé en priorité.
+Si par contre je disposais d'un fichier `random.py` (un fichier vide par exemple) dans mon répertoire courant (`/tmp` dans mon cas), celui-ci serait trouvé en priorité.
 
 ```pycon
->>> import random
->>> random
+>>> import importlib
+>>> importlib.reload(random)
 <module 'random' from '/tmp/random.py'>
 ```
 
@@ -91,14 +91,14 @@ En reprenant l'exemple du conflit sur le module `random` :
 >>> random
 <module 'random' from '/tmp/random.py'>
 >>> sys.path.remove('')
->>> sys.path
-['/usr/lib/python312.zip', '/usr/lib/python3.12', '/usr/lib/python3.12/lib-dynload', '/usr/lib/python3.12/site-packages', 'subdirectory']
 >>> importlib.reload(random)
 <module 'random' from '/usr/lib/python3.11/random.py'>
->>> sys.path.insert(0, '')
->>> sys.path
-['/usr/lib/python312.zip', '/usr/lib/python3.12', '/usr/lib/python3.12/lib-dynload', '/usr/lib/python3.12/site-packages', 'subdirectory']
 ```
+
+[[a]]
+| Pensez à quitter/relancer l'interpréteur Python après cet exemple ou à rajouter manuellement `''` au `sys.path` afin que le répertoire courant devienne à nouveau disponible.
+|
+| Vous pouvez aussi supprimer le fichier `random.py` du répertoire courant pour éviter tout problème ultérieur.
 
 ## Import d'archives zip
 
@@ -119,6 +119,7 @@ Code: `packages.zip/zip_example.py`
 Et comme précédemment, nous pouvons ajouter le chemin `packages.zip` au `sys.path` pour rendre atteignable le module `zip_example`.
 
 ```pycon
+>>> import sys
 >>> sys.path.append('packages.zip')
 >>> import zip_example
 >>> zip_example
