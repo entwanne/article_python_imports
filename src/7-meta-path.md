@@ -1,8 +1,27 @@
 # Découvrir des modules ailleurs
 
-## Les types de _finders_
+## Les deux types de _finders_
 
-Jusqu'ici nous avons étudié uniquement des `PathEntryFinder` (`FileFinder` en étant un cas particulier), mais je vous précisais qu'il en existait deux types.
+Jusqu'ici nous avons étudié uniquement des `PathEntryFinder` (`FileFinder` en est un cas particulier), les _finders_ invoqués par `sys.path_hooks` qui utilisent les entrées du `sys.path` pour localiser les modules.
+
+Comme je vous l'indiquais plus tôt il existe un second type de _finders_, celui  des `MetaPathFinder`.
+Ceux-ci ne reposent pas sur `sys.path` et sont totalement libres d'aller trouver des modules ailleurs.  
+On verra qu'ils n'ont pas exactement la même signature car leur méthode `findspec` reçoit un argument `xxx` supplémentaire.
+
+Les `MetaPathFinder` utilisés par Python sont référencés dans la liste `sys.meta_path`.
+
+```pycon
+>>> import sys
+>>> sys.meta_path
+[<_distutils_hack.DistutilsMetaFinder object at 0xfeedface>, <class '_frozen_importlib.BuiltinImporter'>, <class '_frozen_importlib.FrozenImporter'>, <class '_frozen_importlib_external.PathFinder'>]
+```
+
+On constate donc que plusieurs sont déjà présents au démarrage de Python :
+
+- `DistutilsMetaFinder` est un peu spécial et
+- `BuiltinImporter` est dédié à l'import des modules _builtins_, modules directement implémentés dans le code de l'interpréteur Python (`sys.builtin_module_names`).
+- `FrozenImporter` est quelque peu similaire pour d'autres modules écrits en Python mais compilés et embarqués dans l'interpréteur.
+- `PathFinder` implémente le mécanisme que nous connaissons : c'est le _finder_ qui gère `sys.path_hooks` et les `PathEntryFinder`.
 
 - PathEntryFinder
     - utilise des répertoires (ou assimilés, sys.path) sur le système de fichiers pour localiser les modules
