@@ -2,9 +2,9 @@
 
 ## Qu'est-ce qu'un import ?
 
-En Python [il est d'usage de découper son code en modules](https://zestedesavoir.com/tutoriels/2514/un-zeste-de-python/6-entrees-sorties/1-modules/), chaque module étant une « unité de code » contenant variables, fonctions et classes.
+En Python, [il est d'usage de découper son code en modules](https://zestedesavoir.com/tutoriels/2514/un-zeste-de-python/6-entrees-sorties/1-modules/), chaque module étant une « unité de code » contenant variables, fonctions et classes.
 L'idée d'un module est alors de fournir des fonctionnalités particulières, afin de les utiliser dans notre code.
-Les bibliothèques (comprenant la bibliothèque standard) ne sont qu'une collection de modules.
+Les bibliothèques (y compris la bibliothèque standard) ne sont qu'une collection de modules.
 
 Pour utiliser les fonctionnalités d'un module, il est nécessaire de l'importer.
 Importer un module c'est charger le fichier de code correspondant, l'exécuter et en exposer le contenu.
@@ -29,8 +29,8 @@ Le code précédent est alors équivalent à :
 <module 'pathlib' from '/usr/lib/python3.13/pathlib.py'>
 ```
 
-Cela permet donc de réaliser des imports dynamiques / programmatiques : importer un module dont le nom n'est pas connu avant le lancement du programme (dépendant d'une entrée utilisateur, d'une configuration, d'un échange réseau ou autre).
-Mais on évitera d'utiliser directement la fonction `__import__` car [son usage est découragé](https://docs.python.org/fr/3.13/library/functions.html#import__) en raison de son interface « austère » et de la manière dont elle traite les modules imbriqués (paquets).  
+Cela permet donc de réaliser des imports dynamiques ou programmatiques : importer un module dont le nom n'est pas connu avant le lancement du programme (dépendant d'une entrée utilisateur, d'une configuration, d'un échange réseau ou autre).
+Cependant, on évitera d'utiliser directement la fonction `__import__` car [son usage est découragé](https://docs.python.org/fr/3.13/library/functions.html#import__) en raison de son interface « austère » et de la manière dont elle traite les modules imbriqués (paquets).  
 On lui préférera alors [la fonction `import_module` du module `importlib`](https://docs.python.org/fr/3.13/library/importlib.html#importlib.import_module), qui utilise les mêmes mécanismes en interne.
 
 Là encore, celle-ci se comporte comme attendu.
@@ -44,7 +44,7 @@ Là encore, celle-ci se comporte comme attendu.
 
 ## Chargement et exécution
 
-Comme je l'expliquais plus tôt l'import ne se contente pas seulement de charger les modules, il en exécute aussi le code directement.
+Comme je l'expliquais plus tôt, l'import ne se contente pas seulement de charger les modules ; il en exécute aussi le code directement.
 
 Charger un module, c'est identifier le fichier correspondant et créer un module vide (le contenant).
 Exécuter ce module, c'est exécuter le code du fichier et remplir le contenant à l'aide des objets qui y sont définis.
@@ -109,7 +109,7 @@ Code: `odd.py`
 True
 ```
 
-Cette implémentation — un peu absurde j'en conviens — du test de parité montre que l'interdépendance entre modules est possible.
+Cette implémentation — un peu absurde, j'en conviens — du test de parité montre que l'interdépendance entre modules est possible.
 On notera cependant que je n'utilise pas de `from ... import ...` dans mes modules, justement à cause de l'exécution incomplète.
 
 Écrire `from even import is_even`, cela revient à écrire le code suivant.
