@@ -59,7 +59,7 @@ Import foo.spam.eggs
 ## Imports relatifs
 
 Cette identification du module à importer s'occupe aussi de résoudre les noms relatifs.  
-Il est en effet possible au sein d'un paquet d'importer d'autres modules via leurs chemins relatifs.
+Il est en effet possible, au sein d'un paquet, d'importer d'autres modules via leurs chemins relatifs.
 
 Depuis un module `foo.spam.relative` (donc dans le paquet `foo.spam`), le module `.increment` correspond ainsi au module `foo.spam.increment`.
 
