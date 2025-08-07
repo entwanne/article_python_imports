@@ -1,6 +1,6 @@
 # Conclusion
 
-En conclusion, je vous propose un résumé des différentes étapes de l'import réalisées pr Python :
+En conclusion, je vous propose un résumé des différentes étapes de l'import réalisées par Python :
 
 1. Résolution du nom du module
 2. Recherche du module dans le cache (court-circuit si trouvé)
