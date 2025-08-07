@@ -165,6 +165,8 @@ On peut maintenant aller plus loin et mieux comprendre les étapes de l'import.
 - On itère sur ces _finders_ jusqu'à trouver celui qui peut importer notre module (celui qui renvoie une spécification).
 - On crée/exécute le module grâce au _loader_ associé à la spécification.
 
+!!! ajouter diagramme de flux
+
 ```python
 def my_import(name):
     spec = None
@@ -264,6 +266,11 @@ class ArchiveLoader(importlib.abc.SourceLoader):
             for name in self.archive.getnames()
             if name.endswith('.py')
         }
+
+    def __del__(self):
+        # Fermeture de l'archive ouverte dans l'__init__
+        # dans un code de production il serait préférable d'utiliser un gestionnaire de contexte
+        self.archive.close()
 
     def get_data(self, name):
         member = self.archive.getmember(name)

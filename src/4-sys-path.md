@@ -218,6 +218,7 @@ Il suffit d'un `pyproject.toml` rudimentaire (voire vide) pour forger un paquet 
 Par exemple pour notre répertoire `subdirectory` que nous allons transformer en paquet :
 
 ```toml
+[project]
 name = "dir-example"
 ```
 Code: `subdirectory/pyproject.toml`
