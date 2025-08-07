@@ -165,6 +165,8 @@ On peut maintenant aller plus loin et mieux comprendre les étapes de l'import.
 - On itère sur ces _finders_ jusqu'à trouver celui qui peut importer notre module (celui qui renvoie une spécification).
 - On crée/exécute le module grâce au _loader_ associé à la spécification.
 
+![Diagramme de flux](img/simple_import_workflow.png)
+
 ```python
 def my_import(name):
     spec = None
