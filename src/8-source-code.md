@@ -1,11 +1,28 @@
 # Codes sources des exemples
 
+[[s | Module appelable]]
+| ```python
+| import sys
+| from types import ModuleType
+| 
+| 
+| class CallableModule(ModuleType):
+|     def __call__(self, a, b):
+|         return a + b
+| 
+| 
+| sys.modules[__name__] = CallableModule(__name__)
+```
+
 [[s | Import d'archives `.tar.gz`]]
 | ```python
 | def hello(name):
 |     print('TAR:', 'Hello', name)
 | ```
 | Code: `packages.tar.gz/tar_example.py`
+|
+| [[i]]
+| | La commande `tar czf packages.tar.gz --remove-files tar_example.py` permet de créer l'archive à partir d'un fichier dans le répertoire courant.
 | 
 | ```python
 | import importlib.abc
@@ -22,6 +39,11 @@
 |             for name in self.archive.getnames()
 |             if name.endswith('.py')
 |         }
+| 
+|     def __del__(self):
+|         # Fermeture de l'archive ouverte dans l'__init__
+|         # dans un code de production il serait préférable d'utiliser un gestionnaire de contexte
+|         self.archive.close()
 | 
 |     def get_data(self, name):
 |         member = self.archive.getmember(name)

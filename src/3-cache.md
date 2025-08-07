@@ -87,5 +87,30 @@ class TestModule(ModuleType):
 3
 ```
 
+Ce mécanisme, bien que peu fréquent, est parfois utilisé pour agir directement sur le module courant en redéfinissant ou altérant `sys.modules[__name__]` (`__name__` contenant par définition le nom du module courant).  
+On peut l'imaginer pour implémenter des opérateurs sur notre module (les opérateurs devant être implémentés sur le type de l'objet), comme dans l'exemple qui suit en permettant à un module `addition` d'être appelé comme une fonction.
+
+```python
+import sys
+from types import ModuleType
+
+class CallableModule(ModuleType):
+    def __call__(self, a, b):
+        return a + b
+
+sys.modules[__name__].__class__ = CallableModule
+```
+Code: `addition.py`
+
+```pycon
+>>> import addition
+>>> addition
+<module 'addition' from 'addition.py'>
+>>> addition(3, 5)
+8
+```
+
+Avant l'introduction de la fonction `__getattr__` pour les modules dans la [PEP 562](https://peps.python.org/pep-0562/), on pouvait aussi utiliser ce mécanisme pour redéfinir manuellement `__getattr__` et lever un avertissement lors de l'accès à des attributs dépréciés par exemple.
+
 [[i]]
-| Plutôt que de truquer le cache, nous verrons par la suite comment nous pouvons interagir directement avec le mécanisme d'import pour arriver à ce comportement.
+| Plutôt que de truquer le cache, nous verrons par la suite comment nous pouvons interagir directement avec le mécanisme d'import pour altérer sur nos modules.

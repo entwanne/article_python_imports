@@ -265,6 +265,11 @@ class ArchiveLoader(importlib.abc.SourceLoader):
             if name.endswith('.py')
         }
 
+    def __del__(self):
+        # Fermeture de l'archive ouverte dans l'__init__
+        # dans un code de production il serait préférable d'utiliser un gestionnaire de contexte
+        self.archive.close()
+
     def get_data(self, name):
         member = self.archive.getmember(name)
         fobj = self.archive.extractfile(member)
