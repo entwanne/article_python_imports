@@ -110,14 +110,14 @@ Il ne sera ici pas question d'installation de paquet mais simplement de téléch
 Notre projet se divisera alors en deux composants :
 
 - Un serveur web mettant à disposition les fichiers Python à télécharger.
-- Et un client qui fera appel ce serveur en réalisant son import.
+- Et un client qui fera appel à ce serveur en réalisant son import.
 
 Pour plus de simplificté, nous ferons tourner ces deux composants dans un même programme à l'aide de _threads_ (fils d'exécution).
 
 Commençons alors par mettre en place le serveur, en utilisant le module `http.server` de la bibliothèque standard.
 Ce n'est pas le meilleur outil pour ça mais ça a l'avantage de ne pas demander d'installation ou de prise en main particulière, donc nous nous en contenterons ici.
 
-Le serveur fonctionne à l'aide un gestionnaire de requête (_request handler_) basé sur la classe `BaseHTTPRequestHandler`.
+Le serveur fonctionne à l'aide d'un gestionnaire de requête (_request handler_) basé sur la classe `BaseHTTPRequestHandler`.
 Ce gestionnaire possède des méthodes qui seront appelées pour chaque action HTTP, en l'occurrence seulement `HEAD` et `GET` nous seront utiles ici.  
 La première permet de savoir si un chemin existe et la deuxième de récupérer le contenu associé. Les deux renvoient le statut HTTP adapté (200 si la page est trouvée, 404 sinon) à la requête.
 
@@ -223,7 +223,7 @@ Hello
 
 Et on procède à un petit nettoyage pour la route en coupant le serveur et le _thread_.
 
-```pycon
+```python
 del sys.meta_path[-1]
 server.shutdown()
 thr.join()

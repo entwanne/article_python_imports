@@ -82,7 +82,7 @@ Code: `foo/spam/relative.py`
 ```
 
 Ce sont les points utilisés en préfixe du nom qui indiquent qu'il s'agit d'un import relatif.
-Je parle bien de points au pluriel car il est possible d'en utiliser plusieurs pour remonter les différents niveaux du paquet : `..bar` depuis le paquet `foo.spam` correspond à `foo.bar`.
+Je parle bien de points au pluriel car il est possible d'en utiliser plusieurs pour remonter les différents niveaux du paquet : `..bar` depuis le module `foo.spam.relative` (paquet `foo.spam`) correspond ainsi à `foo.bar`.
 
 La fonction `resolve_name` d'`importlib.util` prend deux chaînes de caractères en arguments, la première est le nom du module à résoudre et la seconde celui du paquet à partir duquel faire la résolution.  
 On constate que pour un import absolu (ne débutant pas par un point) le paquet courant est ignoré, mais qu'il est bien considéré pour les imports relatifs.
