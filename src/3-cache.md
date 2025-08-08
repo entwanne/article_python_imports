@@ -2,10 +2,10 @@
 
 Jusqu'ici, on peut résumer ainsi les différentes étapes réalisées par Python lors de l'import d'un module :
 
-1. Résolution du nom (afin de gérer les imports relatifs)
-2. Imports récursifs des paquets parents (ce procédé étant répété pour chaque parent)
-3. Chargement du module
-4. Exécution du code du module
+1. Résolution du nom (afin de gérer les imports relatifs).
+2. Imports récursifs des paquets parents (ce procédé étant répété pour chaque parent).
+3. Chargement du module.
+4. Exécution du code du module.
 
 Mais ces étapes, si elles étaient répétées à chaque import, représenteraient à force un coût non négligeable.
 Pour l'éviter, Python met en place un mécanisme de cache afin de se souvenir des modules précédemment importés.  
@@ -113,4 +113,4 @@ Code: `addition.py`
 Avant l'introduction de la fonction `__getattr__` pour les modules dans la [PEP 562](https://peps.python.org/pep-0562/), on pouvait aussi utiliser ce mécanisme pour redéfinir manuellement `__getattr__` et lever un avertissement lors de l'accès à des attributs dépréciés par exemple.
 
 [[i]]
-| Plutôt que de truquer le cache, nous verrons par la suite comment nous pouvons interagir directement avec le mécanisme d'import pour altérer sur nos modules.
+| Plutôt que de truquer le cache, nous verrons par la suite comment nous pouvons interagir directement avec le mécanisme d'import pour altérer nos modules.

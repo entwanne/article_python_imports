@@ -281,7 +281,7 @@ def parse_body(content):
 ```
 
 Afin de construire un module et une fonction `run`, on ajoute une autre fonction `parse_tree` recevant une liste de nœuds AST (`body`) et construisant les nœuds manquants pour former un module.  
-On pensera à appeler la fonction `ast.fix_missing_locations` pour compléter les informations de position que nous n'avons pas renseignées sur nos nœuds (et qui permet à Python d'afficher des informations cohérentes sur l'emplacement de l'erreur quand une exception survient).
+On pensera à appeler la fonction `ast.fix_missing_locations` pour compléter les informations de position que nous n'avons pas renseignées sur nos nœuds (et qui permettent à Python d'afficher des informations cohérentes sur l'emplacement de l'erreur quand une exception survient).
 
 ```python
 def parse_tree(body):

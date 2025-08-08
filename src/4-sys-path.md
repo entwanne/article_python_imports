@@ -220,6 +220,7 @@ Par exemple pour notre répertoire `subdirectory` que nous allons transformer en
 ```toml
 [project]
 name = "dir-example"
+version = "1"
 ```
 Code: `subdirectory/pyproject.toml`
 
@@ -235,7 +236,7 @@ Et il devient directement disponible dans Python sans avoir à manipuler le `sys
 ```pycon
 >>> import dir_example
 >>> dir_example
-...
+<module 'dir_example' from '/tmp/venv/lib/python3.13/site-packages/dir_example.py'>
 >>> dir_example.hello('venv')
 DIR: Hello venv
 ```
@@ -245,3 +246,18 @@ DIR: Hello venv
 |
 | Dans notre installation précédente, le fichier `subdirectory/dir_example.py` a été copié dans le répertoire de l'environnement virtuel : les modifications apportées au fichier n'auront alors aucun impact sur le module installé.  
 | En revanche si nous avions utilisé `pip install -e ./subdirectory`, pip aurait créé un lien symbolique vers notre fichier plutôt qu'une copie. Les modifications apportées seraient alors directement visibles depuis Python sans avoir à réinstaller le module.
+|
+| ```sh
+| (venv) % pip uninstall dir-example
+| ...
+| Proceed (Y/n)? y
+| ...
+| (venv) % pip install -e ./subdirectory
+| ...
+| ```
+|
+| ```pycon
+| >>> import dir_example
+| >>> dir_example
+| <module 'dir_example' from '/tmp/subdirectory/dir_example.py'>
+| ```

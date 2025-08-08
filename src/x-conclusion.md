@@ -2,13 +2,13 @@
 
 En conclusion, je vous propose un résumé des différentes étapes de l'import réalisées par Python :
 
-1. Résolution du nom du module
-2. Recherche du module dans le cache (court-circuit si trouvé)
-3. Résolution des modules parents dans le cas d'un paquet
-4. Identification de la spécification du module (_finder_)
-5. Chargement du module (_loader_)
-6. Stockage dans le cache
-7. Exécution du code du module (_loader_)
+1. Résolution du nom du module.
+2. Recherche du module dans le cache (court-circuit si trouvé).
+3. Résolution des modules parents dans le cas d'un paquet.
+4. Identification de la spécification du module (_finder_).
+5. Chargement du module (_loader_).
+6. Stockage dans le cache.
+7. Exécution du code du module (_loader_).
 
 ![Diagramme de flux](img/full_import_workflow.png)
 
@@ -19,7 +19,7 @@ Pour compléter, je peux aussi vous renvoyer vers [ce billet](https://zestedesav
 
 Enfin quelques liens utiles vers les pages de références de Python :
 
-- <https://docs.python.org/3/reference/import.html>
-- <https://docs.python.org/3/library/importlib.html> et plus particulièrement [l'algorithme d'import](https://docs.python.org/3/library/importlib.html#approximating-importlib-import-module)
-- [PEP 302 – New Import Hooks](https://peps.python.org/pep-0302/)
-- [PEP 451 – A ModuleSpec Type for the Import System](https://peps.python.org/pep-0451/)
+- <https://docs.python.org/3/reference/import.html>.
+- <https://docs.python.org/3/library/importlib.html> et plus particulièrement [l'algorithme d'import](https://docs.python.org/3/library/importlib.html#approximating-importlib-import-module).
+- [PEP 302 – New Import Hooks](https://peps.python.org/pep-0302/).
+- [PEP 451 – A ModuleSpec Type for the Import System](https://peps.python.org/pep-0451/).
