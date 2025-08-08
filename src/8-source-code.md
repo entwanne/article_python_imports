@@ -14,6 +14,11 @@
 | sys.modules[__name__] = CallableModule(__name__)
 | ```
 | Code: `addition.py`
+|
+| ```python
+| import addition
+| addition(3, 5)
+| ```
 
 [[s | Import d'archives `.tar.gz`]]
 | ```python
